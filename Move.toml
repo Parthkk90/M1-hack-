@@ -1,0 +1,26 @@
+[package]
+name = "CrescaBasket"
+version = "1.0.0"
+authors = []
+edition = "2024.beta"
+
+[addresses]
+cresca = "0xcafe"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "main"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies.AptosStdlib]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "main"
+subdir = "aptos-move/framework/aptos-stdlib"
+
+[dependencies.MoveStdlib]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "main"
+subdir = "aptos-move/framework/move-stdlib"
+
+[dev-addresses]
+cresca = "0xcafe"

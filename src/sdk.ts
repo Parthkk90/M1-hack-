@@ -293,4 +293,192 @@ export async function fundAccount(account: Account, amount: number = 100000000) 
   });
 }
 
+/**
+ * Initialize payment scheduler
+ */
+export async function initializePaymentScheduler(account: Account) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: account.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::initialize`,
+      functionArguments: [],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: account,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Schedule one-time payment
+ */
+export async function scheduleOneTimePayment(
+  account: Account,
+  recipient: string,
+  amount: number,
+  executionTimestamp: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: account.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::schedule_one_time_payment`,
+      functionArguments: [
+        recipient,
+        amount,
+        executionTimestamp,
+      ],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: account,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  
+  return {
+    transactionHash: committedTxn.hash,
+    success: true,
+  };
+}
+
+/**
+ * Schedule recurring payment
+ */
+export async function scheduleRecurringPayment(
+  account: Account,
+  recipient: string,
+  amount: number,
+  firstExecutionTimestamp: number,
+  intervalType: number, // 0=daily, 1=weekly, 2=monthly, 3=yearly
+  executionCount: number // 0=unlimited
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: account.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::schedule_recurring_payment`,
+      functionArguments: [
+        recipient,
+        amount,
+        firstExecutionTimestamp,
+        intervalType,
+        executionCount,
+      ],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: account,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  
+  return {
+    transactionHash: committedTxn.hash,
+    success: true,
+  };
+}
+
+/**
+ * Cancel scheduled payment
+ */
+export async function cancelSchedule(
+  account: Account,
+  scheduleId: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: account.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::cancel_schedule`,
+      functionArguments: [scheduleId],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: account,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  
+  return {
+    transactionHash: committedTxn.hash,
+    success: true,
+  };
+}
+
+/**
+ * Execute pending payments (keeper function)
+ */
+export async function executePendingPayments(
+  executorAccount: Account,
+  schedulerAddress: string
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: executorAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::execute_pending_payments`,
+      functionArguments: [schedulerAddress],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: executorAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  
+  return committedTxn.hash;
+}
+
+/**
+ * Get user's scheduled payments
+ */
+export async function getUserSchedules(userAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::get_user_schedules`,
+      functionArguments: [userAddress],
+    },
+  });
+
+  return result[0];
+}
+
+/**
+ * Get active schedules count
+ */
+export async function getActiveSchedulesCount(userAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::get_active_schedules_count`,
+      functionArguments: [userAddress],
+    },
+  });
+
+  return Number(result[0]);
+}
+
+/**
+ * Get total locked funds
+ */
+export async function getTotalLockedFunds(userAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::payment_scheduler::get_total_locked_funds`,
+      functionArguments: [userAddress],
+    },
+  });
+
+  return Number(result[0]);
+}
+
 export { aptos, CONTRACT_ADDRESS, ORACLE_ADDRESS };

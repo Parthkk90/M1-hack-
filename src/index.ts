@@ -237,6 +237,164 @@ app.post('/api/oracle/simulate', async (req, res) => {
   }
 });
 
+// Schedule one-time payment
+app.post('/api/schedule/one-time', async (req, res) => {
+  try {
+    const { accountAddress, recipient, amount, executionTimestamp } = req.body;
+
+    if (!accountAddress || !recipient || !amount || !executionTimestamp) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields' 
+      });
+    }
+
+    const account = userAccounts.get(accountAddress);
+    if (!account) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Account not found' 
+      });
+    }
+
+    const result = await sdk.scheduleOneTimePayment(
+      account,
+      recipient,
+      Number(amount),
+      Number(executionTimestamp)
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Schedule recurring payment
+app.post('/api/schedule/recurring', async (req, res) => {
+  try {
+    const { 
+      accountAddress, 
+      recipient, 
+      amount, 
+      firstExecutionTimestamp, 
+      intervalType, 
+      executionCount 
+    } = req.body;
+
+    if (!accountAddress || !recipient || !amount || !firstExecutionTimestamp || intervalType === undefined) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields' 
+      });
+    }
+
+    const account = userAccounts.get(accountAddress);
+    if (!account) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Account not found' 
+      });
+    }
+
+    const result = await sdk.scheduleRecurringPayment(
+      account,
+      recipient,
+      Number(amount),
+      Number(firstExecutionTimestamp),
+      Number(intervalType),
+      Number(executionCount || 0)
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get user's schedules
+app.get('/api/schedule/list/:accountAddress', async (req, res) => {
+  try {
+    const { accountAddress } = req.params;
+
+    const schedules = await sdk.getUserSchedules(accountAddress);
+    const activeCount = await sdk.getActiveSchedulesCount(accountAddress);
+    const totalLocked = await sdk.getTotalLockedFunds(accountAddress);
+
+    res.json({
+      success: true,
+      data: {
+        schedules,
+        activeCount,
+        totalLockedFunds: totalLocked,
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Cancel schedule
+app.post('/api/schedule/cancel', async (req, res) => {
+  try {
+    const { accountAddress, scheduleId } = req.body;
+
+    if (!accountAddress || scheduleId === undefined) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields' 
+      });
+    }
+
+    const account = userAccounts.get(accountAddress);
+    if (!account) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Account not found' 
+      });
+    }
+
+    const result = await sdk.cancelSchedule(account, Number(scheduleId));
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Execute pending payments (keeper endpoint)
+app.post('/api/schedule/execute', async (req, res) => {
+  try {
+    const { schedulerAddress } = req.body;
+
+    if (!schedulerAddress) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing schedulerAddress' 
+      });
+    }
+
+    // Use admin account as executor
+    const txHash = await sdk.executePendingPayments(adminAccount, schedulerAddress);
+
+    res.json({
+      success: true,
+      data: { transactionHash: txHash }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`Cresca Basket API server running on port ${PORT}`);

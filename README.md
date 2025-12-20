@@ -46,11 +46,19 @@ npm run demo
 
 ## 📝 API Endpoints
 
+**Trading**:
 - `POST /api/account/create` - Create new account
 - `GET /api/prices` - Get current oracle prices
 - `POST /api/position/open` - Open basket position
 - `POST /api/position/close` - Close position
 - `POST /api/position/metrics` - Calculate P&L
+
+**Payment Scheduling** 🆕:
+- `POST /api/schedule/one-time` - Schedule one-time payment
+- `POST /api/schedule/recurring` - Schedule recurring payment
+- `GET /api/schedule/list/:address` - Get user's schedules
+- `POST /api/schedule/cancel` - Cancel schedule
+- `POST /api/schedule/execute` - Execute pending payments (keeper)
 
 ---
 

@@ -7,12 +7,22 @@ module cresca::leverage_engine {
     const E_POSITION_NOT_FOUND: u64 = 2;
     const E_INVALID_CALCULATION: u64 = 3;
     const E_LIQUIDATION_THRESHOLD_REACHED: u64 = 4;
+    const E_LEVERAGE_TOO_HIGH: u64 = 5;
 
-    /// Liquidation threshold (80% of collateral value)
-    const LIQUIDATION_THRESHOLD: u64 = 80;
+    /// Maximum leverage (Merkle Trade-style: 150x)
+    const MAX_LEVERAGE: u64 = 150;
 
-    /// Precision for percentage calculations
-    const PERCENTAGE_PRECISION: u64 = 100;
+    /// Minimum position size ($2 in octas, assuming 1 APT = $10)
+    const MIN_POSITION_SIZE: u64 = 200000; // 0.002 APT
+
+    /// Base liquidation threshold (99.3% for 150x positions)
+    const BASE_LIQUIDATION_THRESHOLD: u64 = 993;
+
+    /// Precision for percentage calculations (basis points)
+    const PERCENTAGE_PRECISION: u64 = 10000;
+
+    /// Maintenance margin rate (0.5% for isolated positions)
+    const MAINTENANCE_MARGIN_RATE: u64 = 50; // 0.5% in basis points
 
     /// Position value calculation result
     struct PositionValue has drop {
@@ -53,45 +63,94 @@ module cresca::leverage_engine {
         (current_value, profit_loss, is_profit)
     }
 
-    /// Check if position should be liquidated
+    /// Calculate dynamic liquidation threshold based on leverage
+    /// Higher leverage = tighter liquidation (closer to 100%)
+    public fun calculate_liquidation_threshold(leverage: u64): u64 {
+        if (leverage <= 10) {
+            8000 // 80% for low leverage (1-10x)
+        } else if (leverage <= 50) {
+            9500 // 95% for medium leverage (11-50x)
+        } else if (leverage <= 100) {
+            9800 // 98% for high leverage (51-100x)
+        } else {
+            9930 // 99.3% for extreme leverage (101-150x)
+        }
+    }
+
+    /// Check if position should be liquidated (isolated margin)
     public fun should_liquidate(
         current_value: u64,
         collateral_amount: u64,
         leverage_multiplier: u64,
     ): bool {
-        // Calculate minimum position value (80% of collateral * leverage)
-        let min_value = (collateral_amount * leverage_multiplier * LIQUIDATION_THRESHOLD) / PERCENTAGE_PRECISION;
+        let liquidation_threshold = calculate_liquidation_threshold(leverage_multiplier);
+        // Calculate minimum position value with dynamic threshold
+        let min_value = (collateral_amount * leverage_multiplier * liquidation_threshold) / PERCENTAGE_PRECISION;
         
         current_value < min_value
     }
 
-    /// Calculate health factor (higher is safer)
+    /// Calculate health factor for isolated margin (higher is safer)
+    /// Returns percentage: 100 = at liquidation, 200 = 2x safety margin
     public fun calculate_health_factor(
         current_value: u64,
         collateral_amount: u64,
         leverage_multiplier: u64,
     ): u64 {
-        let required_value = (collateral_amount * leverage_multiplier * LIQUIDATION_THRESHOLD) / PERCENTAGE_PRECISION;
+        let liquidation_threshold = calculate_liquidation_threshold(leverage_multiplier);
+        let required_value = (collateral_amount * leverage_multiplier * liquidation_threshold) / PERCENTAGE_PRECISION;
         
         if (required_value == 0) {
-            return 100
+            return 200 // Maximum safety
         };
 
-        // Health factor as percentage (100 = at liquidation threshold, >100 = safe)
+        // Health factor: 100 = liquidation point, >100 = safe
         (current_value * 100) / required_value
     }
 
-    /// Calculate liquidation price for entire basket
+    /// Calculate maintenance margin requirement
+    public fun calculate_maintenance_margin(
+        position_size: u64,
+        leverage: u64,
+    ): u64 {
+        // Maintenance margin = position_size * (1/leverage + 0.5%)
+        let base_margin = position_size / leverage;
+        let maintenance_fee = (position_size * MAINTENANCE_MARGIN_RATE) / PERCENTAGE_PRECISION;
+        base_margin + maintenance_fee
+    }
+
+    /// Calculate dynamic liquidation price for basket
+    /// For isolated margin: liquidation at (1/leverage)% adverse price move
     public fun calculate_liquidation_price(
+        entry_price: u64,
+        leverage_multiplier: u64,
+        is_long: bool,
+    ): u64 {
+        // Liquidation distance in basis points = 10000 / leverage
+        // Example: 150x -> 66 bps (0.66%), 10x -> 1000 bps (10%)
+        let liquidation_distance = PERCENTAGE_PRECISION / leverage_multiplier;
+        
+        if (is_long) {
+            // Long position: liquidates if price drops
+            entry_price * (PERCENTAGE_PRECISION - liquidation_distance) / PERCENTAGE_PRECISION
+        } else {
+            // Short position: liquidates if price rises
+            entry_price * (PERCENTAGE_PRECISION + liquidation_distance) / PERCENTAGE_PRECISION
+        }
+    }
+
+    /// Calculate liquidation price for basket (weighted)
+    public fun calculate_basket_liquidation_price(
         collateral_amount: u64,
         leverage_multiplier: u64,
         btc_weight: u64,
         eth_weight: u64,
         sol_weight: u64,
+        entry_value: u64,
     ): u64 {
-        // Simplified: liquidation occurs at 80% of entry value
+        let liquidation_threshold = calculate_liquidation_threshold(leverage_multiplier);
         let entry_collateral_value = collateral_amount * leverage_multiplier;
-        (entry_collateral_value * LIQUIDATION_THRESHOLD) / PERCENTAGE_PRECISION
+        (entry_collateral_value * liquidation_threshold) / PERCENTAGE_PRECISION
     }
 
     /// Calculate profit/loss percentage
@@ -176,7 +235,7 @@ module cresca::leverage_engine {
         (current_value, profit_loss, is_profit, health_factor, should_liquidate)
     }
 
-    /// Calculate maximum leverage based on collateral
+    /// Calculate maximum leverage based on collateral (Merkle-style: 150x)
     public fun calculate_max_leverage(
         collateral_amount: u64,
         min_collateral: u64,
@@ -185,8 +244,25 @@ module cresca::leverage_engine {
             return 1
         };
 
-        // Allow up to 10x leverage
-        10
+        // Allow up to 150x leverage (Merkle Trade standard)
+        MAX_LEVERAGE
+    }
+
+    /// Validate leverage is within bounds
+    public fun validate_leverage(leverage: u64): bool {
+        leverage >= 1 && leverage <= MAX_LEVERAGE
+    }
+
+    /// Calculate initial margin requirement
+    public fun calculate_initial_margin(
+        position_size: u64,
+        leverage: u64,
+    ): u64 {
+        // Initial margin = position_size / leverage
+        if (leverage == 0) {
+            return position_size
+        };
+        position_size / leverage
     }
 
     /// Calculate total basket value in USD

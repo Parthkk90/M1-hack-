@@ -25,7 +25,8 @@ async function initializeServer() {
     // Initialize contracts
     await sdk.initializeVault(adminAccount);
     await sdk.initializeOracle(adminAccount);
-    console.log('Contracts initialized successfully');
+    await sdk.initializeFunding(adminAccount);
+    console.log('Contracts initialized successfully (vault, oracle, funding)');
   } catch (error) {
     console.error('Server initialization error:', error);
   }
@@ -74,7 +75,7 @@ app.post('/api/account/create', async (req, res) => {
   }
 });
 
-// Open basket position
+// Open basket position (150x leverage, isolated margin)
 app.post('/api/position/open', async (req, res) => {
   try {
     const { 
@@ -83,7 +84,8 @@ app.post('/api/position/open', async (req, res) => {
       leverageMultiplier, 
       btcWeight, 
       ethWeight, 
-      solWeight 
+      solWeight,
+      isLong = true  // Default to long position
     } = req.body;
 
     // Validate input
@@ -91,6 +93,14 @@ app.post('/api/position/open', async (req, res) => {
       return res.status(400).json({ 
         success: false, 
         error: 'Missing required fields' 
+      });
+    }
+
+    // Validate leverage (1-150x)
+    if (leverageMultiplier < 1 || leverageMultiplier > 150) {
+      return res.status(400).json({
+        success: false,
+        error: 'Leverage must be between 1x and 150x'
       });
     }
 
@@ -102,18 +112,23 @@ app.post('/api/position/open', async (req, res) => {
       });
     }
 
+    // Validate leverage with risk tolerance
+    const validation = sdk.validateLeverage(Number(leverageMultiplier), 'extreme');
+    
     const result = await sdk.openPosition(
       account,
       Number(collateralAmount),
       Number(leverageMultiplier),
       Number(btcWeight),
       Number(ethWeight),
-      Number(solWeight)
+      Number(solWeight),
+      isLong
     );
 
     res.json({
       success: true,
-      data: result
+      data: result,
+      warning: validation.warning  // Include risk warning
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -151,15 +166,24 @@ app.post('/api/position/close', async (req, res) => {
   }
 });
 
-// Get position details
+// Get position details (with isolated margin info)
 app.get('/api/position/:positionId', async (req, res) => {
   try {
     const { positionId } = req.params;
     const position = await sdk.getPosition(sdk.CONTRACT_ADDRESS, Number(positionId));
 
+    // Calculate liquidation info
+    const liquidationDistance = (1 / Number(position.leverageMultiplier)) * 100;
+
     res.json({
       success: true,
-      data: position
+      data: {
+        ...position,
+        liquidationDistance: `${liquidationDistance.toFixed(2)}%`,
+        riskLevel: Number(position.leverageMultiplier) > 100 ? 'EXTREME' :
+                   Number(position.leverageMultiplier) > 50 ? 'HIGH' :
+                   Number(position.leverageMultiplier) > 10 ? 'MEDIUM' : 'LOW'
+      }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -395,9 +419,87 @@ app.post('/api/schedule/execute', async (req, res) => {
   }
 });
 
+// Get current funding rate
+app.get('/api/funding/rate', async (req, res) => {
+  try {
+    const fundingRate = await sdk.getCurrentFundingRate(sdk.CONTRACT_ADDRESS);
+    
+    res.json({
+      success: true,
+      data: {
+        fundingRate: `${(Number(fundingRate.fundingRate) / 100).toFixed(2)}%`,
+        longsPay: fundingRate.longsPay,
+        direction: fundingRate.longsPay ? 'Longs pay Shorts' : 'Shorts pay Longs'
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get funding state (open interest)
+app.get('/api/funding/state', async (req, res) => {
+  try {
+    const state = await sdk.getFundingState(sdk.CONTRACT_ADDRESS);
+    const total = Number(state.longOpenInterest) + Number(state.shortOpenInterest);
+    
+    res.json({
+      success: true,
+      data: {
+        longOpenInterest: state.longOpenInterest,
+        shortOpenInterest: state.shortOpenInterest,
+        totalOpenInterest: total,
+        longPercentage: total > 0 ? ((Number(state.longOpenInterest) / total) * 100).toFixed(2) + '%' : '0%',
+        shortPercentage: total > 0 ? ((Number(state.shortOpenInterest) / total) * 100).toFixed(2) + '%' : '0%'
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Calculate liquidation price
+app.post('/api/position/liquidation-price', async (req, res) => {
+  try {
+    const { entryPrice, leverage, isLong = true } = req.body;
+    
+    if (!entryPrice || !leverage) {
+      return res.status(400).json({
+        success: false,
+        error: 'Entry price and leverage are required'
+      });
+    }
+    
+    const liquidationPrice = sdk.calculateLiquidationPrice(
+      Number(entryPrice),
+      Number(leverage),
+      isLong
+    );
+    
+    const distance = Math.abs((liquidationPrice - Number(entryPrice)) / Number(entryPrice)) * 100;
+    
+    res.json({
+      success: true,
+      data: {
+        liquidationPrice: liquidationPrice.toFixed(2),
+        entryPrice: Number(entryPrice).toFixed(2),
+        distance: `${distance.toFixed(2)}%`,
+        direction: isLong ? 'Below entry' : 'Above entry'
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, async () => {
-  console.log(`Cresca Basket API server running on port ${PORT}`);
+  console.log(`\n🚀 Cresca Basket API Server`);
+  console.log(`📡 Port: ${PORT}`);
+  console.log(`🌐 Health: http://localhost:${PORT}/health`);
+  console.log(`📊 Leverage: 1x - 150x (Merkle Trade standard)`);
+  console.log(`⚡ Features: Isolated Margin + Funding Rates\n`);
+  
   await initializeServer();
 });
 

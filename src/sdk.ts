@@ -57,7 +57,7 @@ export async function initializeOracle(adminAccount: Account) {
 }
 
 /**
- * Open a new basket position
+ * Open a new basket position (150x leverage, isolated margin)
  */
 export async function openPosition(
   userAccount: Account,
@@ -65,16 +65,22 @@ export async function openPosition(
   leverageMultiplier: number,
   btcWeight: number,
   ethWeight: number,
-  solWeight: number
+  solWeight: number,
+  isLong: boolean = true  // Long (true) or Short (false)
 ) {
   // Validate weights sum to 100
   if (btcWeight + ethWeight + solWeight !== 100) {
     throw new Error("Basket weights must sum to 100");
   }
 
-  // Validate leverage
-  if (leverageMultiplier < 1 || leverageMultiplier > 10) {
-    throw new Error("Leverage must be between 1x and 10x");
+  // Validate leverage (1x to 150x - Merkle Trade standard)
+  if (leverageMultiplier < 1 || leverageMultiplier > 150) {
+    throw new Error("Leverage must be between 1x and 150x");
+  }
+
+  // Warn for high leverage
+  if (leverageMultiplier > 50) {
+    console.warn(`⚠️  WARNING: ${leverageMultiplier}x leverage - ${(100 / leverageMultiplier).toFixed(2)}% adverse move = liquidation`);
   }
 
   const transaction = await aptos.transaction.build.simple({
@@ -88,6 +94,7 @@ export async function openPosition(
         btcWeight,
         ethWeight,
         solWeight,
+        isLong,  // Long or short position
       ],
     },
   });
@@ -137,7 +144,7 @@ export async function closePosition(
 }
 
 /**
- * Get position details
+ * Get position details (with isolated margin info)
  */
 export async function getPosition(vaultAddress: string, positionId: number) {
   const result = await aptos.view({
@@ -155,6 +162,9 @@ export async function getPosition(vaultAddress: string, positionId: number) {
     ethWeight: result[4],
     solWeight: result[5],
     isActive: result[6],
+    isLong: result[7],
+    maintenanceMargin: result[8],
+    liquidationPrice: result[9],
   };
 }
 
@@ -479,6 +489,151 @@ export async function getTotalLockedFunds(userAddress: string) {
   });
 
   return Number(result[0]);
+}
+
+/**
+ * Initialize funding rate state
+ */
+export async function initializeFunding(adminAccount: Account) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::funding_rate::initialize`,
+      functionArguments: [],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Get current funding rate
+ */
+export async function getCurrentFundingRate(stateAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::funding_rate::get_current_funding_rate`,
+      functionArguments: [stateAddress],
+    },
+  });
+
+  return {
+    fundingRate: result[0],  // In basis points (100 = 1%)
+    longsPay: result[1],      // True if longs pay shorts
+  };
+}
+
+/**
+ * Get funding state (open interest)
+ */
+export async function getFundingState(stateAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::funding_rate::get_funding_state`,
+      functionArguments: [stateAddress],
+    },
+  });
+
+  return {
+    longOpenInterest: result[0],
+    shortOpenInterest: result[1],
+    cumulativeFundingLong: result[2],
+    cumulativeFundingShort: result[3],
+  };
+}
+
+/**
+ * Estimate funding payment for a position
+ */
+export async function estimateFundingPayment(
+  stateAddress: string,
+  positionSize: number,
+  isLong: boolean
+) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::funding_rate::estimate_funding_payment`,
+      functionArguments: [stateAddress, positionSize, isLong],
+    },
+  });
+
+  return {
+    paymentAmount: result[0],
+    shouldReceive: result[1],  // True if receiving, false if paying
+  };
+}
+
+/**
+ * Calculate liquidation price for isolated position
+ */
+export function calculateLiquidationPrice(
+  entryPrice: number,
+  leverage: number,
+  isLong: boolean
+): number {
+  const liquidationDistance = 1 / leverage;
+  
+  if (isLong) {
+    return entryPrice * (1 - liquidationDistance);
+  } else {
+    return entryPrice * (1 + liquidationDistance);
+  }
+}
+
+/**
+ * Calculate dynamic liquidation threshold based on leverage
+ */
+export function getLiquidationThreshold(leverage: number): number {
+  if (leverage <= 10) return 0.80;      // 80% for low leverage
+  if (leverage <= 50) return 0.95;      // 95% for medium leverage
+  if (leverage <= 100) return 0.98;     // 98% for high leverage
+  return 0.993;                         // 99.3% for extreme leverage (150x)
+}
+
+/**
+ * Validate if leverage is safe for user's risk tolerance
+ */
+export function validateLeverage(
+  leverage: number,
+  riskTolerance: 'low' | 'medium' | 'high' | 'extreme'
+): { isValid: boolean; warning?: string } {
+  const liquidationDistance = (1 / leverage) * 100;
+  
+  const thresholds = {
+    low: 10,      // Max 10x (10% move)
+    medium: 50,   // Max 50x (2% move)
+    high: 100,    // Max 100x (1% move)
+    extreme: 150, // Max 150x (0.67% move)
+  };
+  
+  if (leverage > thresholds[riskTolerance]) {
+    return {
+      isValid: false,
+      warning: `${leverage}x exceeds ${riskTolerance} risk tolerance (max ${thresholds[riskTolerance]}x)`
+    };
+  }
+  
+  if (leverage > 100) {
+    return {
+      isValid: true,
+      warning: `⚠️ EXTREME RISK: ${leverage}x leverage - ${liquidationDistance.toFixed(2)}% adverse move = liquidation`
+    };
+  }
+  
+  if (leverage > 50) {
+    return {
+      isValid: true,
+      warning: `⚠️ HIGH RISK: ${leverage}x leverage - ${liquidationDistance.toFixed(2)}% adverse move = liquidation`
+    };
+  }
+  
+  return { isValid: true };
 }
 
 export { aptos, CONTRACT_ADDRESS, ORACLE_ADDRESS };

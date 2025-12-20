@@ -13,24 +13,31 @@ module cresca::basket_vault {
     const E_INSUFFICIENT_COLLATERAL: u64 = 5;
     const E_POSITION_NOT_FOUND: u64 = 6;
     const E_NOT_POSITION_OWNER: u64 = 7;
+    const E_POSITION_SIZE_TOO_SMALL: u64 = 8;
 
-    /// Maximum leverage allowed (10x)
-    const MAX_LEVERAGE: u64 = 10;
+    /// Maximum leverage allowed (150x - Merkle Trade standard)
+    const MAX_LEVERAGE: u64 = 150;
 
     /// Minimum collateral in octas (0.1 APT)
     const MIN_COLLATERAL: u64 = 10000000;
 
-    /// Basket position structure
+    /// Minimum position size ($2 equivalent in octas, ~0.002 APT at $10/APT)
+    const MIN_POSITION_SIZE: u64 = 200000;
+
+    /// Basket position structure (Isolated Margin)
     struct BasketPosition has key, store {
         owner: address,
-        collateral_amount: u64,
-        leverage_multiplier: u64,
-        btc_weight: u64,  // Percentage (0-100)
-        eth_weight: u64,  // Percentage (0-100)
-        sol_weight: u64,  // Percentage (0-100)
+        collateral_amount: u64,      // Isolated collateral for this position
+        leverage_multiplier: u64,     // 1-150x
+        btc_weight: u64,              // Percentage (0-100)
+        eth_weight: u64,              // Percentage (0-100)
+        sol_weight: u64,              // Percentage (0-100)
         entry_timestamp: u64,
         entry_value: u64,
         is_active: bool,
+        is_long: bool,                // Long (true) or Short (false)
+        maintenance_margin: u64,      // Minimum to avoid liquidation
+        liquidation_price: u64,       // Auto-liquidation price
     }
 
     /// Global vault storage
@@ -57,7 +64,7 @@ module cresca::basket_vault {
         });
     }
 
-    /// Open a new basket position
+    /// Open a new basket position with isolated margin (up to 150x)
     public entry fun open_position(
         user: &signer,
         vault_addr: address,
@@ -66,6 +73,7 @@ module cresca::basket_vault {
         btc_weight: u64,
         eth_weight: u64,
         sol_weight: u64,
+        is_long: bool,
     ) acquires Vault, PositionHolder {
         // Validations
         assert!(exists<Vault>(vault_addr), E_NOT_INITIALIZED);
@@ -75,17 +83,29 @@ module cresca::basket_vault {
 
         let user_addr = signer::address_of(user);
         
-        // Transfer collateral from user to vault
+        // Calculate position size
+        let position_size = collateral_amount * leverage_multiplier;
+        assert!(position_size >= MIN_POSITION_SIZE, E_POSITION_SIZE_TOO_SMALL);
+        
+        // Transfer collateral from user to vault (isolated margin)
         let collateral = coin::withdraw<AptosCoin>(user, collateral_amount);
         coin::deposit(vault_addr, collateral);
 
         // Get current timestamp
         let current_time = timestamp::now_seconds();
 
-        // Calculate entry value (will be updated with oracle prices)
-        let entry_value = collateral_amount * leverage_multiplier;
+        // Calculate entry value and maintenance margin
+        let entry_value = position_size;
+        let maintenance_margin = position_size / leverage_multiplier + (position_size * 50) / 10000; // 0.5%
+        
+        // Calculate liquidation price (simplified - will use weighted basket price)
+        let liquidation_price = if (is_long) {
+            (entry_value * (10000 - (10000 / leverage_multiplier))) / 10000
+        } else {
+            (entry_value * (10000 + (10000 / leverage_multiplier))) / 10000
+        };
 
-        // Create position
+        // Create isolated margin position
         let position = BasketPosition {
             owner: user_addr,
             collateral_amount,
@@ -96,6 +116,9 @@ module cresca::basket_vault {
             entry_timestamp: current_time,
             entry_value,
             is_active: true,
+            is_long,
+            maintenance_margin,
+            liquidation_price,
         };
 
         // Store position in vault
@@ -146,9 +169,9 @@ module cresca::basket_vault {
         coin::deposit(user_addr, collateral);
     }
 
-    /// View function: Get position details
+    /// View function: Get position details (with isolated margin info)
     #[view]
-    public fun get_position(vault_addr: address, position_id: u64): (address, u64, u64, u64, u64, u64, bool) acquires Vault {
+    public fun get_position(vault_addr: address, position_id: u64): (address, u64, u64, u64, u64, u64, bool, bool, u64, u64) acquires Vault {
         assert!(exists<Vault>(vault_addr), E_NOT_INITIALIZED);
         
         let vault = borrow_global<Vault>(vault_addr);
@@ -162,7 +185,10 @@ module cresca::basket_vault {
             position.btc_weight,
             position.eth_weight,
             position.sol_weight,
-            position.is_active
+            position.is_active,
+            position.is_long,
+            position.maintenance_margin,
+            position.liquidation_price
         )
     }
 

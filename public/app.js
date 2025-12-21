@@ -72,7 +72,7 @@ async function loadDashboard() {
 function renderSampleBaskets() {
     const basketsList = document.getElementById('baskets-list');
     basketsList.innerHTML = `
-        <div class="basket-card long">
+        <div class="basket-card long" onclick="showPositionDetails('1')" style="cursor: pointer;">
             <div class="basket-header">
                 <div>
                     <div class="basket-name">Mega Cap Index</div>
@@ -103,7 +103,7 @@ function renderSampleBaskets() {
             </div>
         </div>
 
-        <div class="basket-card short">
+        <div class="basket-card short" onclick="showPositionDetails('2')" style="cursor: pointer;">
             <div class="basket-header">
                 <div>
                     <div class="basket-name">Solana Eco</div>
@@ -135,7 +135,7 @@ function renderSampleBaskets() {
             </div>
         </div>
 
-        <div class="basket-card long">
+        <div class="basket-card long" onclick="showPositionDetails('3')" style="cursor: pointer;">
             <div class="basket-header">
                 <div>
                     <div class="basket-name">DeFi 2.0</div>
@@ -290,6 +290,137 @@ async function openPosition() {
         button.textContent = 'Open Position →';
         button.disabled = false;
     }
+}
+
+// Review Transaction Modal
+function openPosition() {
+    const totalWeight = weights.btc + weights.eth + weights.sol;
+    
+    if (totalWeight !== 100) {
+        alert(`Total weight must be 100%. Current: ${totalWeight}%`);
+        return;
+    }
+
+    // Open review modal
+    document.getElementById('review-modal').classList.add('active');
+    
+    // Update modal with values
+    document.getElementById('preview-btc').textContent = `BTC ${weights.btc}%`;
+    document.getElementById('preview-eth').textContent = `ETH ${weights.eth}%`;
+    document.getElementById('preview-sol').textContent = `SOL ${weights.sol}%`;
+    document.getElementById('review-leverage').textContent = `${selectedLeverage}.0x`;
+    
+    // Calculate position size (example: $2000 collateral * leverage)
+    const collateral = 2000;
+    const positionSize = collateral * selectedLeverage;
+    document.getElementById('review-size').textContent = `$${positionSize.toLocaleString()}`;
+    document.getElementById('review-collateral').textContent = `$${collateral.toLocaleString()}`;
+    
+    // Calculate liquidation price (simplified)
+    const currentPrice = 1784.42;
+    const liqPrice = currentPrice * (1 - (0.8 / selectedLeverage));
+    document.getElementById('review-liq').textContent = `$${liqPrice.toFixed(0).toLocaleString()}`;
+    document.getElementById('review-entry').textContent = `$${currentPrice.toLocaleString()}`;
+}
+
+function closeModal() {
+    document.getElementById('review-modal').classList.remove('active');
+}
+
+async function confirmTransaction() {
+    const button = document.querySelector('.slide-to-confirm');
+    button.textContent = '⏳ Processing...';
+    button.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/api/position/open`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                collateral: 2000,
+                leverage: selectedLeverage,
+                weights: weights
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            closeModal();
+            alert('✅ Position opened successfully!');
+            showPositionDetails(result.positionId || '1');
+        } else {
+            throw new Error(result.error || 'Transaction failed');
+        }
+    } catch (error) {
+        console.error('Transaction error:', error);
+        alert('❌ Transaction failed: ' + error.message);
+    } finally {
+        button.textContent = 'Slide to Confirm';
+        button.disabled = false;
+    }
+}
+
+// Position Details Page
+function showPositionDetails(positionId) {
+    showPage('position-details-page');
+    drawCompositionChart();
+    
+    // Simulate live data updates
+    setInterval(updatePositionData, 5000);
+}
+
+function drawCompositionChart() {
+    const canvas = document.getElementById('compositionChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const centerX = 60;
+    const centerY = 60;
+    const radius = 50;
+    const innerRadius = 35;
+    
+    const data = [
+        { percentage: 0.40, color: '#7c3aed' }, // BTC 40%
+        { percentage: 0.30, color: '#a855f7' }, // ETH 30%
+        { percentage: 0.30, color: '#c084fc' }  // SOL 30%
+    ];
+    
+    let startAngle = -Math.PI / 2;
+    
+    data.forEach(item => {
+        const endAngle = startAngle + (item.percentage * 2 * Math.PI);
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        
+        startAngle = endAngle;
+    });
+}
+
+function updatePositionData() {
+    // Simulate small price changes
+    const baseValue = 14203.44;
+    const change = (Math.random() - 0.5) * 200;
+    const newValue = baseValue + change;
+    const pnl = newValue - 11803.44;
+    const pnlPercent = (pnl / 11803.44) * 100;
+    
+    document.getElementById('net-value').textContent = `$${newValue.toFixed(2).toLocaleString()}`;
+    document.getElementById('net-change').textContent = 
+        `📈 ${pnl > 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPercent > 0 ? '+' : ''}${pnlPercent.toFixed(2)}%)`;
+    
+    // Update health score
+    const healthScore = 1.85 + (Math.random() - 0.5) * 0.1;
+    document.getElementById('health-score').textContent = healthScore.toFixed(2);
+    
+    // Update funding rate
+    const funding = -0.012 + (Math.random() - 0.5) * 0.004;
+    document.getElementById('pos-funding').textContent = `${funding.toFixed(4)}%`;
 }
 
 // Initialize on load

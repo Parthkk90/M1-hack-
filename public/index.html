@@ -222,6 +222,217 @@
         </div>
     </div>
 
+    <!-- Review Transaction Modal -->
+    <div id="review-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Review Transaction</h2>
+                <button class="close-modal" onclick="closeModal()">✕</button>
+            </div>
+
+            <div class="basket-preview">
+                <div class="basket-icon-large">🧺</div>
+                <span class="long-badge">LONG</span>
+                <h3 id="basket-name">Cresca High-Vol Basket</h3>
+                <div class="weight-tags">
+                    <span class="weight-tag" id="preview-btc">BTC 40%</span>
+                    <span class="weight-tag" id="preview-eth">ETH 30%</span>
+                    <span class="weight-tag" id="preview-sol">SOL 30%</span>
+                </div>
+            </div>
+
+            <div class="signature-box">
+                <div class="signature-icon">👆</div>
+                <div class="signature-text">
+                    <div class="signature-label">SIGNATURE REQUIRED</div>
+                    <div class="signature-address">0x71C...9A23</div>
+                </div>
+                <span class="pending-badge">⚠️ PENDING</span>
+            </div>
+
+            <div class="transaction-details">
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <div class="detail-label">LEVERAGE</div>
+                        <div class="detail-value" id="review-leverage">5.0x</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">POSITION SIZE</div>
+                        <div class="detail-value" id="review-size">$10,000</div>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <div class="detail-label">COLLATERAL</div>
+                        <div class="detail-value">
+                            <span id="review-collateral">$2,000</span>
+                            <span class="detail-unit">USDC</span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">LIQ. PRICE <span class="warning-icon">⚠️</span></div>
+                        <div class="detail-value warning" id="review-liq">$1,420</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="transaction-breakdown">
+                <h4>TRANSACTION BREAKDOWN</h4>
+                <div class="breakdown-item">
+                    <span>Entry Price (Index)</span>
+                    <span id="review-entry">$1,784.42</span>
+                </div>
+            </div>
+
+            <button class="slide-to-confirm" onclick="confirmTransaction()">
+                <span class="slide-arrow">▶</span>
+                Slide to Confirm
+            </button>
+
+            <div class="security-footer">
+                🔒 Secured by Cresca Smart Contracts
+            </div>
+        </div>
+    </div>
+
+    <!-- Position Details Page -->
+    <div id="position-details-page" class="page">
+        <nav class="navbar">
+            <button class="back-btn" onclick="showDashboard()">←</button>
+            <div>
+                <h2 id="position-title">Metaverse 3x Long</h2>
+                <span class="live-badge">● LIVE</span>
+            </div>
+            <button class="menu-btn">⋮</button>
+        </nav>
+
+        <main class="position-container">
+            <div class="net-value-card">
+                <div class="net-label">NET POSITION VALUE</div>
+                <div class="net-amount" id="net-value">$14,203.44</div>
+                <div class="net-change" id="net-change">
+                    📈 +$2,400.00 (20.32%)
+                </div>
+            </div>
+
+            <div class="health-card">
+                <div class="health-header">
+                    <div>
+                        <span class="shield-icon">🛡️</span>
+                        Health Factor
+                    </div>
+                    <div class="health-score" id="health-score">1.85</div>
+                </div>
+                <div class="health-bar">
+                    <div class="health-fill" style="width: 61.67%"></div>
+                </div>
+                <div class="health-metrics">
+                    <div>
+                        <div class="metric-label">LIQ. PRICE</div>
+                        <div class="metric-value danger" id="pos-liq-price">$11,050</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">MAX SAFE</div>
+                        <div class="metric-value" id="max-safe">3.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-card">
+                    <div class="detail-label">Entry Price</div>
+                    <div class="detail-value" id="pos-entry-price">$11,803.44</div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Leverage</div>
+                    <div class="detail-value">
+                        <span id="pos-leverage">3.0x</span>
+                        <span class="long-tag">LONG</span>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Collateral</div>
+                    <div class="detail-value" id="pos-collateral">$4,734.00</div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Funding /8h</div>
+                    <div class="detail-value danger" id="pos-funding">-0.012%</div>
+                </div>
+            </div>
+
+            <div class="composition-card">
+                <div class="card-header">
+                    <h3>Basket Composition</h3>
+                    <a href="#" class="details-link">Details ›</a>
+                </div>
+                <div class="composition-content">
+                    <div class="donut-chart">
+                        <canvas id="compositionChart" width="120" height="120"></canvas>
+                        <div class="donut-center">
+                            <div class="assets-label">ASSETS</div>
+                            <div class="assets-count">3</div>
+                        </div>
+                    </div>
+                    <div class="asset-list">
+                        <div class="asset-item">
+                            <div class="asset-info">
+                                <span class="asset-dot" style="background: #7c3aed"></span>
+                                <span class="asset-name">BTC</span>
+                            </div>
+                            <div class="asset-stats">
+                                <span class="asset-weight">40%</span>
+                                <span class="asset-change positive">+1.2%</span>
+                            </div>
+                        </div>
+                        <div class="asset-item">
+                            <div class="asset-info">
+                                <span class="asset-dot" style="background: #a855f7"></span>
+                                <span class="asset-name">ETH</span>
+                            </div>
+                            <div class="asset-stats">
+                                <span class="asset-weight">30%</span>
+                                <span class="asset-change positive">+0.8%</span>
+                            </div>
+                        </div>
+                        <div class="asset-item">
+                            <div class="asset-info">
+                                <span class="asset-dot" style="background: #c084fc"></span>
+                                <span class="asset-name">SOL</span>
+                            </div>
+                            <div class="asset-stats">
+                                <span class="asset-weight">30%</span>
+                                <span class="asset-change negative">-0.5%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-card">
+                <h3>Position History</h3>
+                <div class="history-item">
+                    <div>
+                        <div class="history-label">Margin Added</div>
+                        <div class="history-time">Today, 10:42 AM</div>
+                    </div>
+                    <div class="history-value positive">+$500.00</div>
+                </div>
+                <div class="history-item">
+                    <div>
+                        <div class="history-label">Position Opened</div>
+                        <div class="history-time">Yesterday, 14:20 PM</div>
+                    </div>
+                    <div class="history-value">3.0x Leverage</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-secondary">Adjust Margin</button>
+                <button class="btn-danger">✕ Close Position</button>
+            </div>
+        </main>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

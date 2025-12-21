@@ -1,4 +1,4 @@
-// Cresca Basket SDK - Movement Network Integration
+// Movement Baskets SDK - AI-Powered Basket Trading on Movement Network
 
 import { Aptos, AptosConfig, Network, Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 
@@ -6,9 +6,10 @@ import { Aptos, AptosConfig, Network, Account, Ed25519PrivateKey } from "@aptos-
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0xcafe";
 const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS || "0xcafe";
 
-// Initialize Aptos client (Movement uses same SDK)
+// Initialize Aptos client for Movement Network
 const config = new AptosConfig({ 
-  network: Network.TESTNET  // Change to Movement testnet RPC when available
+  fullnode: process.env.MOVEMENT_RPC || "https://testnet.movementnetwork.xyz/v1",
+  faucet: process.env.MOVEMENT_FAUCET || "https://faucet.testnet.movementnetwork.xyz"
 });
 const aptos = new Aptos(config);
 
@@ -57,7 +58,7 @@ export async function initializeOracle(adminAccount: Account) {
 }
 
 /**
- * Open a new basket position (150x leverage, isolated margin)
+ * Open a new basket position (up to 20x leverage, isolated margin)
  */
 export async function openPosition(
   userAccount: Account,
@@ -73,13 +74,13 @@ export async function openPosition(
     throw new Error("Basket weights must sum to 100");
   }
 
-  // Validate leverage (1x to 150x - Merkle Trade standard)
-  if (leverageMultiplier < 1 || leverageMultiplier > 150) {
-    throw new Error("Leverage must be between 1x and 150x");
+  // Validate leverage (1x to 20x - Movement Baskets sustainable leverage)
+  if (leverageMultiplier < 1 || leverageMultiplier > 20) {
+    throw new Error("Leverage must be between 1x and 20x");
   }
 
   // Warn for high leverage
-  if (leverageMultiplier > 50) {
+  if (leverageMultiplier > 10) {
     console.warn(`⚠️  WARNING: ${leverageMultiplier}x leverage - ${(100 / leverageMultiplier).toFixed(2)}% adverse move = liquidation`);
   }
 
@@ -597,19 +598,18 @@ export function getLiquidationThreshold(leverage: number): number {
 }
 
 /**
- * Validate if leverage is safe for user's risk tolerance
+ * Validate if leverage is safe for user's risk tolerance (Movement Baskets 20x max)
  */
 export function validateLeverage(
   leverage: number,
-  riskTolerance: 'low' | 'medium' | 'high' | 'extreme'
+  riskTolerance: 'low' | 'medium' | 'high'
 ): { isValid: boolean; warning?: string } {
   const liquidationDistance = (1 / leverage) * 100;
   
   const thresholds = {
-    low: 10,      // Max 10x (10% move)
-    medium: 50,   // Max 50x (2% move)
-    high: 100,    // Max 100x (1% move)
-    extreme: 150, // Max 150x (0.67% move)
+    low: 5,      // Max 5x (20% move)
+    medium: 10,  // Max 10x (10% move)
+    high: 20,    // Max 20x (5% move)
   };
   
   if (leverage > thresholds[riskTolerance]) {
@@ -619,14 +619,7 @@ export function validateLeverage(
     };
   }
   
-  if (leverage > 100) {
-    return {
-      isValid: true,
-      warning: `⚠️ EXTREME RISK: ${leverage}x leverage - ${liquidationDistance.toFixed(2)}% adverse move = liquidation`
-    };
-  }
-  
-  if (leverage > 50) {
+  if (leverage > 15) {
     return {
       isValid: true,
       warning: `⚠️ HIGH RISK: ${leverage}x leverage - ${liquidationDistance.toFixed(2)}% adverse move = liquidation`
@@ -634,6 +627,156 @@ export function validateLeverage(
   }
   
   return { isValid: true };
+}
+
+/**
+ * Initialize AI rebalancing engine
+ */
+export async function initializeRebalancing(adminAccount: Account) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::initialize`,
+      functionArguments: [],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Create AI-managed rebalancing strategy
+ */
+export async function createAIStrategy(
+  userAccount: Account,
+  basketId: number,
+  btcWeight: number,
+  ethWeight: number,
+  solWeight: number,
+  volatilityTolerance: number,
+  rebalanceThreshold: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: userAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::create_strategy`,
+      functionArguments: [
+        basketId,
+        [btcWeight, ethWeight, solWeight],
+        ["BTC", "ETH", "SOL"],
+        volatilityTolerance,
+        rebalanceThreshold,
+        true  // is_ai_managed
+      ],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: userAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Get risk score for a basket
+ */
+export async function getRiskScore(basketId: number): Promise<any> {
+  const payload = {
+    function: `${CONTRACT_ADDRESS}::rebalancing_engine::calculate_risk_score` as `${string}::${string}::${string}`,
+    functionArguments: [basketId],
+  };
+
+  return await aptos.view({ payload });
+}
+
+/**
+ * Execute rebalance for AI-managed basket
+ */
+export async function executeRebalance(
+  userAccount: Account,
+  basketId: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: userAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::execute_rebalance`,
+      functionArguments: [basketId],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: userAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Initialize revenue distributor
+ */
+export async function initializeRevenue(adminAccount: Account) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::initialize`,
+      functionArguments: [],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Subscribe to premium tier
+ */
+export async function subscribePremium(
+  userAccount: Account,
+  durationMonths: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: userAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::subscribe_premium`,
+      functionArguments: [CONTRACT_ADDRESS, durationMonths],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: userAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Get total revenue stats
+ */
+export async function getRevenueStats(): Promise<any> {
+  const payload = {
+    function: `${CONTRACT_ADDRESS}::revenue_distributor::get_total_revenue` as `${string}::${string}::${string}`,
+    functionArguments: [CONTRACT_ADDRESS],
+  };
+
+  return await aptos.view({ payload });
 }
 
 export { aptos, CONTRACT_ADDRESS, ORACLE_ADDRESS };

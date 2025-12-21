@@ -1,5 +1,6 @@
 module cresca::price_oracle {
     use std::signer;
+    use std::vector;
     use aptos_framework::timestamp;
 
     /// Error codes

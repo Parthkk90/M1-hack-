@@ -10,13 +10,13 @@ module cresca::leverage_engine {
     const E_LEVERAGE_TOO_HIGH: u64 = 5;
 
     /// Maximum leverage (Merkle Trade-style: 150x)
-    const MAX_LEVERAGE: u64 = 150;
+    const MAX_LEVERAGE: u64 = 20;
 
     /// Minimum position size ($2 in octas, assuming 1 APT = $10)
     const MIN_POSITION_SIZE: u64 = 200000; // 0.002 APT
 
     /// Base liquidation threshold (99.3% for 150x positions)
-    const BASE_LIQUIDATION_THRESHOLD: u64 = 993;
+    const BASE_LIQUIDATION_THRESHOLD: u64 = 950;
 
     /// Precision for percentage calculations (basis points)
     const PERCENTAGE_PRECISION: u64 = 10000;
@@ -65,15 +65,16 @@ module cresca::leverage_engine {
 
     /// Calculate dynamic liquidation threshold based on leverage
     /// Higher leverage = tighter liquidation (closer to 100%)
+    /// Movement Baskets: Sustainable leverage tiers (max 20x)
     public fun calculate_liquidation_threshold(leverage: u64): u64 {
-        if (leverage <= 10) {
-            8000 // 80% for low leverage (1-10x)
-        } else if (leverage <= 50) {
-            9500 // 95% for medium leverage (11-50x)
-        } else if (leverage <= 100) {
-            9800 // 98% for high leverage (51-100x)
+        if (leverage <= 5) {
+            7500 // 75% for conservative (1-5x) - 25% buffer
+        } else if (leverage <= 10) {
+            8500 // 85% for moderate (6-10x) - 15% buffer
+        } else if (leverage <= 15) {
+            9200 // 92% for aggressive (11-15x) - 8% buffer
         } else {
-            9930 // 99.3% for extreme leverage (101-150x)
+            9500 // 95% for max leverage (16-20x) - 5% buffer
         }
     }
 

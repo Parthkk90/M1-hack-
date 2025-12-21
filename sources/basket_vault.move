@@ -15,14 +15,14 @@ module cresca::basket_vault {
     const E_NOT_POSITION_OWNER: u64 = 7;
     const E_POSITION_SIZE_TOO_SMALL: u64 = 8;
 
-    /// Maximum leverage allowed (150x - Merkle Trade standard)
-    const MAX_LEVERAGE: u64 = 150;
+    /// Maximum leverage allowed (20x - Sustainable leverage for Movement Baskets)
+    const MAX_LEVERAGE: u64 = 20;
 
-    /// Minimum collateral in octas (0.1 APT)
-    const MIN_COLLATERAL: u64 = 10000000;
+    /// Minimum collateral in octas (0.01 APT = $0.50 at $50/APT)
+    const MIN_COLLATERAL: u64 = 1000000;
 
-    /// Minimum position size ($2 equivalent in octas, ~0.002 APT at $10/APT)
-    const MIN_POSITION_SIZE: u64 = 200000;
+    /// Minimum position size ($10 equivalent in octas)
+    const MIN_POSITION_SIZE: u64 = 20000000;
 
     /// Basket position structure (Isolated Margin)
     struct BasketPosition has key, store {
@@ -144,7 +144,7 @@ module cresca::basket_vault {
         user: &signer,
         vault_addr: address,
         position_id: u64,
-    ) acquires Vault, PositionHolder {
+    ) acquires Vault {
         assert!(exists<Vault>(vault_addr), E_NOT_INITIALIZED);
         
         let user_addr = signer::address_of(user);

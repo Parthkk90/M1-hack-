@@ -1,6 +1,7 @@
-// API Service for Cresca Basket DeFi
+// API Service for Movement Baskets - AI-Powered DeFi
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import * as sdk from './sdk';
 import { Account } from "@aptos-labs/ts-sdk";
 
@@ -10,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Store admin account (in production, use secure key management)
 let adminAccount: Account;
@@ -34,7 +36,7 @@ async function initializeServer() {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Cresca Basket API is running' });
+  res.json({ status: 'ok', message: 'Movement Baskets API is running', version: '2.0' });
 });
 
 // Get oracle prices
@@ -75,7 +77,7 @@ app.post('/api/account/create', async (req, res) => {
   }
 });
 
-// Open basket position (150x leverage, isolated margin)
+// Open basket position (up to 20x leverage, isolated margin)
 app.post('/api/position/open', async (req, res) => {
   try {
     const { 
@@ -112,8 +114,8 @@ app.post('/api/position/open', async (req, res) => {
       });
     }
 
-    // Validate leverage with risk tolerance
-    const validation = sdk.validateLeverage(Number(leverageMultiplier), 'extreme');
+    // Validate leverage with risk tolerance (max 20x)
+    const validation = sdk.validateLeverage(Number(leverageMultiplier), 'high');
     
     const result = await sdk.openPosition(
       account,
@@ -492,13 +494,123 @@ app.post('/api/position/liquidation-price', async (req, res) => {
   }
 });
 
+// Create AI rebalancing strategy
+app.post('/api/ai/strategy/create', async (req, res) => {
+  try {
+    const { accountAddress, basketId, btcWeight, ethWeight, solWeight, volatilityTolerance, rebalanceThreshold } = req.body;
+    
+    const account = userAccounts.get(accountAddress);
+    if (!account) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+
+    const txHash = await sdk.createAIStrategy(
+      account,
+      Number(basketId),
+      Number(btcWeight),
+      Number(ethWeight),
+      Number(solWeight),
+      Number(volatilityTolerance),
+      Number(rebalanceThreshold)
+    );
+
+    res.json({
+      success: true,
+      data: { transactionHash: txHash, message: 'AI strategy created' }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get risk score
+app.get('/api/ai/risk-score/:basketId', async (req, res) => {
+  try {
+    const basketId = Number(req.params.basketId);
+    const riskScore = await sdk.getRiskScore(basketId);
+
+    res.json({
+      success: true,
+      data: riskScore
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Execute rebalance
+app.post('/api/ai/rebalance', async (req, res) => {
+  try {
+    const { accountAddress, basketId } = req.body;
+    
+    const account = userAccounts.get(accountAddress);
+    if (!account) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+
+    const txHash = await sdk.executeRebalance(account, Number(basketId));
+
+    res.json({
+      success: true,
+      data: { transactionHash: txHash, message: 'Rebalance executed' }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Subscribe to premium
+app.post('/api/subscription/premium', async (req, res) => {
+  try {
+    const { accountAddress, durationMonths } = req.body;
+    
+    const account = userAccounts.get(accountAddress);
+    if (!account) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+
+    const txHash = await sdk.subscribePremium(account, Number(durationMonths));
+
+    res.json({
+      success: true,
+      data: { 
+        transactionHash: txHash, 
+        message: `Subscribed for ${durationMonths} month(s)`,
+        cost: `${durationMonths * 10} APT`
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get revenue stats
+app.get('/api/revenue/stats', async (req, res) => {
+  try {
+    const stats = await sdk.getRevenueStats();
+
+    res.json({
+      success: true,
+      data: {
+        tradingFees: stats[0],
+        performanceFees: stats[1],
+        liquidationFees: stats[2],
+        subscriptionFees: stats[3],
+        total: Number(stats[0]) + Number(stats[1]) + Number(stats[2]) + Number(stats[3])
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, async () => {
-  console.log(`\n🚀 Cresca Basket API Server`);
+  console.log(`\n🚀 Movement Baskets API Server`);
   console.log(`📡 Port: ${PORT}`);
   console.log(`🌐 Health: http://localhost:${PORT}/health`);
-  console.log(`📊 Leverage: 1x - 150x (Merkle Trade standard)`);
-  console.log(`⚡ Features: Isolated Margin + Funding Rates\n`);
+  console.log(`📊 Leverage: 1x - 20x (Sustainable AI-powered)`);
+  console.log(`🤖 Features: AI Rebalancing + Revenue Streams\n`);
   
   await initializeServer();
 });

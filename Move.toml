@@ -1,25 +1,24 @@
 [package]
-name = "CrescaBasket"
-version = "1.0.0"
+name = "MovementBaskets"
+version = "2.0.0"
 authors = []
-edition = "2024.beta"
 
 [addresses]
-cresca = "0xcafe"
+cresca = "0x9291fd7e660da4d4a49821392202d34111e26dfa73b630ce1a8d713ec068e5a7"
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "main"
+rev = "aptos-release-v1.8"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dependencies.AptosStdlib]
 git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "main"
+rev = "aptos-release-v1.8"
 subdir = "aptos-move/framework/aptos-stdlib"
 
 [dependencies.MoveStdlib]
 git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "main"
+rev = "aptos-release-v1.8"
 subdir = "aptos-move/framework/move-stdlib"
 
 [dev-addresses]

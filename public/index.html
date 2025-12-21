@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cresca - Trade Diversified Crypto, One Position</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="page active">
+        <nav class="navbar">
+            <div class="logo">
+                <div class="logo-icon">🎯</div>
+                <div>
+                    <h2>Cresca</h2>
+                    <p class="subtitle">Basket Protocol</p>
+                </div>
+            </div>
+            <div class="network-badge">
+                <span class="dot"></span>
+                Movement
+            </div>
+        </nav>
+
+        <main class="hero">
+            <h1 class="hero-title">
+                Trade Diversified<br>
+                <span class="highlight">Crypto</span>, One<br>
+                Position
+            </h1>
+
+            <div class="feature-card">
+                <div class="card-image">
+                    <div class="basket-icon">🧺</div>
+                </div>
+                <h3>Leveraged Indices</h3>
+                <p>Access leveraged perpetuals on top crypto indices with a single click. No complex management.</p>
+            </div>
+
+            <div class="wallet-connect">
+                <button class="btn-primary" onclick="connectMetaMask()">
+                    <span class="wallet-icon">🦊</span>
+                    Connect MetaMask
+                </button>
+                <button class="btn-secondary" onclick="connectWallet()">
+                    <span class="wallet-icon">📱</span>
+                    WalletConnect
+                </button>
+                <button class="btn-link" onclick="showDashboard()">
+                    Create a new wallet
+                </button>
+            </div>
+
+            <div class="powered-by">
+                POWERED BY MOVEMENT PROTOCOL
+            </div>
+        </main>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-page" class="page">
+        <nav class="navbar">
+            <div class="user-info">
+                <div class="avatar">AT</div>
+                <div>
+                    <p class="welcome">Welcome back,</p>
+                    <p class="username">Alex Trader</p>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button class="icon-btn">🔍</button>
+                <button class="icon-btn notification">🔔</button>
+            </div>
+        </nav>
+
+        <div class="dashboard-content">
+            <div class="equity-card">
+                <div class="equity-header">
+                    <h3>Total Equity</h3>
+                    <span class="change-badge positive">+9.4%</span>
+                </div>
+                <h1 class="equity-amount">$14,250.45</h1>
+                <p class="equity-change">+$1,240.50 today</p>
+                <canvas id="equity-chart"></canvas>
+            </div>
+
+            <div class="quick-actions">
+                <button class="action-btn">
+                    <span>↓</span>
+                    Deposit
+                </button>
+                <button class="action-btn">
+                    <span>↑</span>
+                    Withdraw
+                </button>
+                <button class="action-btn">
+                    <span>⇄</span>
+                    Swap
+                </button>
+                <button class="action-btn">
+                    <span>⟳</span>
+                    History
+                </button>
+            </div>
+
+            <div class="section-header">
+                <h2>Active Baskets</h2>
+                <a href="#" class="view-all">View All</a>
+            </div>
+
+            <div class="baskets-list" id="baskets-list">
+                <!-- Baskets will be loaded here -->
+            </div>
+
+            <button class="btn-create" onclick="showBasketBuilder()">
+                + Create New Basket
+            </button>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active">
+                <span>🏠</span>
+                Home
+            </button>
+            <button class="nav-item">
+                <span>📊</span>
+                Market
+            </button>
+            <button class="nav-item">
+                <span>💳</span>
+                Wallet
+            </button>
+            <button class="nav-item">
+                <span>⚙️</span>
+                Settings
+            </button>
+        </nav>
+    </div>
+
+    <!-- Basket Builder -->
+    <div id="basket-builder-page" class="page">
+        <nav class="navbar">
+            <button class="back-btn" onclick="showDashboard()">←</button>
+            <h2>Build Basket</h2>
+            <button class="reset-btn">Reset</button>
+        </nav>
+
+        <div class="builder-content">
+            <div class="composition-header">
+                <p>COMPOSITION WEIGHT</p>
+                <h2><span id="total-weight">100</span>% / 100%</h2>
+            </div>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+
+            <div class="assets-section">
+                <div class="section-header">
+                    <h2>Assets</h2>
+                    <button class="btn-add">+ Add Asset</button>
+                </div>
+
+                <div class="asset-card">
+                    <div class="asset-info">
+                        <div class="asset-icon btc">₿</div>
+                        <div>
+                            <h3>Bitcoin <span class="ticker">BTC</span></h3>
+                            <p class="price">$64,230.50</p>
+                        </div>
+                    </div>
+                    <div class="asset-weight">50%</div>
+                    <input type="range" class="weight-slider" min="0" max="100" value="50" onchange="updateWeight(this, 'btc')">
+                </div>
+
+                <div class="asset-card">
+                    <div class="asset-info">
+                        <div class="asset-icon eth">Ξ</div>
+                        <div>
+                            <h3>Ethereum <span class="ticker">ETH</span></h3>
+                            <p class="price">$3,450.12</p>
+                        </div>
+                    </div>
+                    <div class="asset-weight">30%</div>
+                    <input type="range" class="weight-slider" min="0" max="100" value="30" onchange="updateWeight(this, 'eth')">
+                </div>
+
+                <div class="asset-card">
+                    <div class="asset-info">
+                        <div class="asset-icon sol">◎</div>
+                        <div>
+                            <h3>Solana <span class="ticker">SOL</span></h3>
+                            <p class="price">$145.20</p>
+                        </div>
+                    </div>
+                    <div class="asset-weight">20%</div>
+                    <input type="range" class="weight-slider" min="0" max="100" value="20" onchange="updateWeight(this, 'sol')">
+                </div>
+            </div>
+
+            <div class="leverage-section">
+                <div class="leverage-header">
+                    <h2>Leverage</h2>
+                    <span class="leverage-value">5.0x</span>
+                </div>
+                <div class="leverage-options">
+                    <button class="leverage-btn" onclick="selectLeverage(1)">1x</button>
+                    <button class="leverage-btn" onclick="selectLeverage(2)">2x</button>
+                    <button class="leverage-btn" onclick="selectLeverage(3)">3x</button>
+                    <button class="leverage-btn active" onclick="selectLeverage(5)">5x</button>
+                    <button class="leverage-btn" onclick="selectLeverage(10)">10x</button>
+                    <button class="leverage-btn" onclick="selectLeverage(20)">20x</button>
+                </div>
+            </div>
+
+            <button class="btn-open-position" onclick="openPosition()">
+                Open Position →
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

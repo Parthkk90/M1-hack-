@@ -428,9 +428,114 @@
 
             <div class="action-buttons">
                 <button class="btn-secondary">Adjust Margin</button>
-                <button class="btn-danger">✕ Close Position</button>
+                <button class="btn-danger" onclick="openClosePositionModal()">✕ Close Position</button>
             </div>
         </main>
+    </div>
+
+    <!-- Close Position Modal -->
+    <div id="close-position-modal" class="modal">
+        <div class="modal-content close-modal-content">
+            <div class="modal-header">
+                <h2>Close Position</h2>
+                <button class="close-modal" onclick="closeClosePositionModal()">✕</button>
+            </div>
+
+            <div class="warning-banner">
+                <span class="warning-icon">⚠️</span>
+                <div class="warning-text">
+                    Closing this position is irreversible. Market volatility may affect the final payout amount.
+                </div>
+            </div>
+
+            <div class="close-basket-info">
+                <div class="basket-icon-small">🧺</div>
+                <div class="basket-details-text">
+                    <div class="basket-name-close">ETH-PERP Basket</div>
+                    <span class="long-badge-small">LONG</span>
+                </div>
+                <div class="basket-meta">5x Leverage • Isolated</div>
+            </div>
+
+            <div class="unrealized-pnl">
+                <div class="pnl-label">UNREALIZED P&L</div>
+                <div class="pnl-amount positive" id="close-pnl-amount">+$1,240.50</div>
+                <div class="pnl-percentage positive" id="close-pnl-percent">📈 12.5%</div>
+            </div>
+
+            <div class="close-details-list">
+                <div class="close-detail-row">
+                    <span class="detail-label-gray">Entry Price</span>
+                    <span class="detail-value-black" id="close-entry-price">$1,850.00</span>
+                </div>
+                <div class="close-detail-row">
+                    <span class="detail-label-gray">Mark Price</span>
+                    <span class="detail-value-black" id="close-mark-price">$2,100.00</span>
+                </div>
+                <div class="close-detail-row">
+                    <span class="detail-label-gray">Est. Payout</span>
+                    <span class="detail-value-purple" id="close-payout">• 4.205 ETH</span>
+                </div>
+                <div class="close-detail-row">
+                    <span class="detail-label-gray">Network Fee</span>
+                    <span class="detail-value-black" id="close-fee">0.005 ETH</span>
+                </div>
+            </div>
+
+            <button class="slide-to-close" onclick="executeClosePosition()">
+                <span class="slide-arrow">▶▶</span>
+                Slide to Close Position
+            </button>
+        </div>
+    </div>
+
+    <!-- Close Position Success Modal -->
+    <div id="close-success-modal" class="modal">
+        <div class="modal-content success-modal-content">
+            <div class="success-icon">
+                <div class="checkmark">✓</div>
+            </div>
+
+            <h2 class="success-title">Position Closed</h2>
+            <p class="success-subtitle">Successfully settled on-chain</p>
+
+            <div class="success-pnl-card">
+                <div class="success-label">REALIZED P&L</div>
+                <div class="success-amount positive" id="success-pnl">+$1,240.50</div>
+            </div>
+
+            <div class="success-details">
+                <div class="success-detail-row">
+                    <span class="detail-label-gray">Closing Price</span>
+                    <span class="detail-value-black" id="success-closing-price">$2,098.45</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="detail-label-gray">Basket Value</span>
+                    <span class="detail-value-black" id="success-basket-value">4.205 ETH</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="detail-label-gray">Transaction</span>
+                    <span class="detail-value-link" id="success-tx-hash">
+                        0x3f...8a91
+                        <span class="copy-icon" onclick="copyTxHash()">📋</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="new-balance-card">
+                <div class="balance-label">NEW WALLET BALANCE</div>
+                <div class="balance-display">
+                    <span id="success-balance">14.52 ETH</span>
+                    <span class="copy-icon" onclick="copyBalance()">📋</span>
+                </div>
+            </div>
+
+            <button class="btn-primary full-width" onclick="backToPortfolio()">
+                ← Back to Portfolio
+            </button>
+
+            <a href="#" class="explorer-link" onclick="viewInExplorer()">View in Block Explorer</a>
+        </div>
     </div>
 
     <script src="app.js"></script>

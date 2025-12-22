@@ -423,6 +423,101 @@ function updatePositionData() {
     document.getElementById('pos-funding').textContent = `${funding.toFixed(4)}%`;
 }
 
+// Close Position Modal Functions
+function openClosePositionModal() {
+    document.getElementById('close-position-modal').classList.add('active');
+    
+    // Calculate current position data
+    const entryPrice = 1850.00;
+    const currentPrice = 2100.00;
+    const leverage = 5;
+    const collateral = 4734.00; // From position details
+    
+    const pnl = (currentPrice - entryPrice) / entryPrice * 100;
+    const pnlAmount = collateral * (pnl / 100) * leverage;
+    
+    // Update modal values
+    document.getElementById('close-pnl-amount').textContent = `+$${pnlAmount.toFixed(2)}`;
+    document.getElementById('close-pnl-percent').textContent = `📈 ${pnl.toFixed(1)}%`;
+    document.getElementById('close-entry-price').textContent = `$${entryPrice.toLocaleString()}`;
+    document.getElementById('close-mark-price').textContent = `$${currentPrice.toLocaleString()}`;
+    
+    const payoutETH = (collateral + pnlAmount) / currentPrice;
+    document.getElementById('close-payout').textContent = `• ${payoutETH.toFixed(3)} ETH`;
+}
+
+function closeClosePositionModal() {
+    document.getElementById('close-position-modal').classList.remove('active');
+}
+
+async function executeClosePosition() {
+    const button = document.querySelector('.slide-to-close');
+    button.textContent = '⏳ Closing Position...';
+    button.disabled = true;
+
+    try {
+        // Simulate blockchain transaction
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Close the confirmation modal
+        closeClosePositionModal();
+        
+        // Show success modal
+        setTimeout(() => {
+            showCloseSuccessModal();
+        }, 300);
+
+    } catch (error) {
+        console.error('Close position error:', error);
+        alert('❌ Failed to close position: ' + error.message);
+        button.textContent = 'Slide to Close Position';
+        button.disabled = false;
+    }
+}
+
+function showCloseSuccessModal() {
+    const modal = document.getElementById('close-success-modal');
+    modal.classList.add('active');
+    
+    // Update success modal values
+    const pnlAmount = 1240.50;
+    const closingPrice = 2098.45;
+    const basketValue = 4.205;
+    const txHash = '0x3f' + Math.random().toString(36).substring(2, 8) + '8a91';
+    const newBalance = 14.52;
+    
+    document.getElementById('success-pnl').textContent = `+$${pnlAmount.toFixed(2)}`;
+    document.getElementById('success-closing-price').textContent = `$${closingPrice.toLocaleString()}`;
+    document.getElementById('success-basket-value').textContent = `${basketValue} ETH`;
+    document.getElementById('success-tx-hash').innerHTML = `
+        ${txHash.slice(0, 6)}...${txHash.slice(-4)}
+        <span class="copy-icon" onclick="copyTxHash('${txHash}')">📋</span>
+    `;
+    document.getElementById('success-balance').textContent = `${newBalance} ETH`;
+}
+
+function copyTxHash(hash) {
+    const fullHash = hash || '0x3f7e8a91234567890abcdef';
+    navigator.clipboard.writeText(fullHash);
+    alert('✓ Transaction hash copied!');
+}
+
+function copyBalance() {
+    const balance = document.getElementById('success-balance').textContent;
+    navigator.clipboard.writeText(balance);
+    alert('✓ Balance copied!');
+}
+
+function backToPortfolio() {
+    document.getElementById('close-success-modal').classList.remove('active');
+    showDashboard();
+}
+
+function viewInExplorer() {
+    const explorerUrl = 'https://explorer.movementnetwork.xyz/?network=bardock+testnet';
+    window.open(explorerUrl, '_blank');
+}
+
 // Initialize on load
 window.addEventListener('load', () => {
     // Check if coming from wallet connect

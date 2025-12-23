@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { api } from '../components/integration';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../theme';
 
@@ -53,11 +51,11 @@ export default function SchedulePaymentScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Text style={{fontSize: 24, color: Colors.text}}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Schedule</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Ionicons name="add" size={24} color={Colors.primary} />
+          <Text style={{fontSize: 24, color: Colors.primary}}>+</Text>
         </TouchableOpacity>
       </View>
 
@@ -66,11 +64,11 @@ export default function SchedulePaymentScreen() {
         <View style={styles.calendarCard}>
           <View style={styles.calendarHeader}>
             <TouchableOpacity>
-              <Ionicons name="chevron-back" size={24} color={Colors.text} />
+              <Text style={{fontSize: 24, color: Colors.text}}>‹</Text>
             </TouchableOpacity>
             <Text style={styles.calendarTitle}>December 2025</Text>
             <TouchableOpacity>
-              <Ionicons name="chevron-forward" size={24} color={Colors.text} />
+              <Text style={{fontSize: 24, color: Colors.text}}>›</Text>
             </TouchableOpacity>
           </View>
 
@@ -97,7 +95,7 @@ export default function SchedulePaymentScreen() {
             <View key={payment.id} style={styles.paymentCard}>
               <View style={styles.paymentHeader}>
                 <View style={styles.paymentIcon}>
-                  <Ionicons name="repeat" size={20} color={Colors.primary} />
+                  <Text style={{fontSize: 20, color: Colors.primary}}>↻</Text>
                 </View>
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentAmount}>{payment.amount}</Text>
@@ -136,7 +134,7 @@ export default function SchedulePaymentScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Schedule Payment</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
+                <Text style={{fontSize: 24, color: Colors.text}}>×</Text>
               </TouchableOpacity>
             </View>
 
@@ -146,7 +144,7 @@ export default function SchedulePaymentScreen() {
                 style={styles.dateButton}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Ionicons name="calendar" size={20} color={Colors.primary} />
+                <Text style={{fontSize: 20, color: Colors.primary}}>📅</Text>
                 <Text style={styles.dateButtonText}>
                   {selectedDate.toLocaleDateString('en-US', { 
                     weekday: 'long', 
@@ -251,29 +249,8 @@ export default function SchedulePaymentScreen() {
         </View>
       </Modal>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={(event, date) => {
-            setShowDatePicker(false);
-            if (date) setSelectedDate(date);
-          }}
-        />
-      )}
-
-      {showTimePicker && (
-        <DateTimePicker
-          value={executionTime}
-          mode="time"
-          display="default"
-          onChange={(event, date) => {
-            setShowTimePicker(false);
-            if (date) setExecutionTime(date);
-          }}
-        />
-      )}
+      {/* Date and Time pickers would go here - requires @react-native-community/datetimepicker */}
+      {/* Install with: npm install @react-native-community/datetimepicker */}
     </View>
   );
 }

@@ -44,6 +44,19 @@ async function initializeKeeper() {
 }
 
 /**
+ * Track a payment scheduler
+ */
+export function trackScheduler(schedulerAddress: string) {
+  if (!trackedSchedulers.has(schedulerAddress)) {
+    trackedSchedulers.set(schedulerAddress, {
+      schedulerAddress,
+      lastChecked: 0,
+    });
+    console.log(`📌 Now tracking scheduler: ${schedulerAddress}`);
+  }
+}
+
+/**
  * Add position to liquidation monitoring
  */
 export function monitorPosition(vaultAddress: string, positionId: number, owner: string) {
@@ -107,7 +120,57 @@ async function checkLiquidations(): Promise<number> {
 /**
  * Check and execute pending payments for a single scheduler
  */
-async fu
+async function processScheduler(schedulerAddress: string): Promise<number> {
+  try {
+    const schedules = await sdk.getUserSchedules(schedulerAddress);
+    
+    // Type guard to ensure schedules is an array
+    if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
+      return 0;
+    }
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    let pendingCount = 0;
+
+    // Count pending payments
+    for (const schedule of schedules) {
+      if (schedule.is_active && schedule.execution_time <= currentTime) {
+        pendingCount++;
+      }
+    }
+
+    if (pendingCount > 0) {
+      console.log(`⏰ Found ${pendingCount} pending payment(s) for ${schedulerAddress}`);
+      
+      // Execute all pending payments
+      const txHash = await sdk.executePendingPayments(keeperAccount, schedulerAddress);
+      console.log(`✅ Executed payments. TX: ${txHash}`);
+      
+      return pendingCount;
+    }
+
+    return 0;
+  } catch (error: any) {
+    console.error(`❌ Error processing scheduler ${schedulerAddress}:`, error.message);
+    return 0;
+  }
+}
+
+/**
+ * Main keeper loop
+ */
+async function keeperLoop() {
+  while (isRunning) {
+    try {
+      console.log('\n🔍 Checking for pending payments...');
+      
+      let totalExecuted = 0;
+      
+      // Check all tracked schedulers
+      for (const [address, info] of trackedSchedulers.entries()) {
+        const executed = await processScheduler(address);
+        totalExecuted += executed;
+        
         // Update last checked time
         info.lastChecked = Date.now();
       }
@@ -149,133 +212,6 @@ async fu
  */
 export async function startKeeper() {
   if (isRunning) {
-    console.log('⚠️ Keeper already running');
-    return;
-  }
-
-  await initializeKeeper();
-  isRunning = true;
-  
-  console.log('🚀 Keeper bot started');
-  console.log(`💰 Payment check interval: ${CHECK_INTERVAL / 1000}s`);
-  console.log(`⚡ Liquidation check interval: ${LIQUIDATION_CHECK_INTERVAL / 1000}s`);
-  console.log('👀 Monitoring:', {
-    schedulers: trackedSchedulers.size,
-    positions: monitoredPositions.length,
-  });
-  
-  keeperLoop();
-}
-
-/**
- * Stop the keeper bot
- */
-export function stopKeeper() {
-  if (!isRunning) {
-    console.log('⚠️ Keeper not running');
-    return;
-  }
-
-  isRunning = false;
-  console.log('🛑 Keeper bot stopped');
-}
-
-/**
- * Get keeper status
- */
-export function getKeeperStatus() {
-  return {
-    isRunning,
-    keeperAddress: keeperAccount?.accountAddress.toString(),
-    trackedSchedulers: trackedSchedulers.size,
-    monitoredPositions: monitoredPositions.length,
-    checkInterval: CHECK_INTERVAL,
-    liquidationCheckInterval: LIQUIDATION_CHECK_INTERVAL,
-  };
-}
-
-// Export for external use
-export { initializeKeeper, trackScheduler, monitorPosition };
-
-// Auto-start if run directly
-if (require.main === module) {
-  startKeeper().catch(console.error);
-}nction processScheduler(schedulerAddress: string): Promise<number> {
-  try {
-    const schedules = await sdk.getUserSchedules(schedulerAddress);
-    
-    if (!schedules || schedules.length === 0) {
-      return 0;
-    }
-
-    const currentTime = Math.floor(Date.now() / 1000);
-    let pendingCount = 0;
-
-    // Count pending payments
-    for (const schedule of schedules) {
-      if (schedule.is_active && schedule.execution_time <= currentTime) {
-        pendingCount++;
-      }
-    }
-
-    if (pendingCount > 0) {
-      console.log(`⏰ Found ${pendingCount} pending payment(s) for ${schedulerAddress}`);
-      
-      // Execute all pending payments
-      const txHash = await sdk.executePendingPayments(keeperAccount, schedulerAddress);
-      console.log(`✅ Executed payments. TX: ${txHash}`);
-      
-      return pendingCount;
-    }
-
-    return 0;
-  } catch (error: any) {
-    console.error(`❌ Error processing scheduler ${schedulerAddress}:`, error.message);
-    return 0;
-  }
-}
-
-/**
- * Main keeper loop
- */
-async function keeperLoop() {
-  while (isRunning) {
-    try {
-      console.log('\n🔍 Checking for pending payments...');
-      
-      let totalExecuted = 0;
-      
-      for (const [address, info] of trackedSchedulers.entries()) {
-        const executed = await processScheduler(address);
-        totalExecuted += executed;
-        
-        trackedSchedulers.set(address, {
-          ...info,
-          lastChecked: Date.now(),
-        });
-      }
-
-      if (totalExecuted > 0) {
-        console.log(`🎉 Successfully executed ${totalExecuted} payment(s)`);
-      } else {
-        console.log('✨ No pending payments at this time');
-      }
-
-      console.log(`💤 Sleeping for ${CHECK_INTERVAL / 1000} seconds...`);
-      await sleep(CHECK_INTERVAL);
-
-    } catch (error: any) {
-      console.error('❌ Keeper loop error:', error.message);
-      await sleep(CHECK_INTERVAL);
-    }
-  }
-}
-
-/**
- * Start keeper bot
- */
-export async function startKeeper() {
-  if (isRunning) {
     console.log('⚠️ Keeper bot is already running');
     return;
   }
@@ -287,14 +223,15 @@ export async function startKeeper() {
   console.log('🤖 KEEPER BOT STARTED');
   console.log('='.repeat(60));
   console.log(`📊 Tracking ${trackedSchedulers.size} scheduler(s)`);
-  console.log(`⏱️  Check interval: ${CHECK_INTERVAL / 1000} seconds`);
+  console.log(`👀 Monitoring ${monitoredPositions.length} position(s)`);
+  console.log(`⏱️  Payment check: ${CHECK_INTERVAL / 1000}s | Liquidation check: ${LIQUIDATION_CHECK_INTERVAL / 1000}s`);
   console.log('='.repeat(60) + '\n');
 
   keeperLoop();
 }
 
 /**
- * Stop keeper bot
+ * Stop the keeper bot
  */
 export function stopKeeper() {
   if (!isRunning) {
@@ -307,14 +244,19 @@ export function stopKeeper() {
 }
 
 /**
- * Get keeper status
+ * Get current keeper status
  */
 export function getKeeperStatus() {
   return {
     isRunning,
     keeperAddress: keeperAccount?.accountAddress.toString(),
-    trackedSchedulers: Array.from(trackedSchedulers.values()),
+    trackedSchedulers: Array.from(trackedSchedulers.entries()).map(([address, info]) => ({
+      address,
+      lastChecked: info.lastChecked,
+    })),
+    monitoredPositions: monitoredPositions.length,
     checkInterval: CHECK_INTERVAL,
+    liquidationCheckInterval: LIQUIDATION_CHECK_INTERVAL,
   };
 }
 
@@ -362,6 +304,9 @@ export async function runKeeperDemo() {
   await startKeeper();
 }
 
+// Export for external use
+export { initializeKeeper };
+
 // Run demo if called directly
 if (require.main === module) {
   runKeeperDemo()
@@ -371,4 +316,4 @@ if (require.main === module) {
     });
 }
 
-export default { startKeeper, stopKeeper, getKeeperStatus, trackScheduler };
+export default { startKeeper, stopKeeper, getKeeperStatus, trackScheduler, monitorPosition };

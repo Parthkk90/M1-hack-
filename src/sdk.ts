@@ -779,4 +779,418 @@ export async function getRevenueStats(): Promise<any> {
   return await aptos.view({ payload });
 }
 
+/**
+ * Collect trading fee from a position
+ */
+export async function collectTradingFee(
+  adminAccount: Account,
+  userAddress: string,
+  positionSize: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::collect_trading_fee`,
+      functionArguments: [CONTRACT_ADDRESS, userAddress, positionSize],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Collect performance fee from profitable positions
+ */
+export async function collectPerformanceFee(
+  adminAccount: Account,
+  userAddress: string,
+  profitAmount: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::collect_performance_fee`,
+      functionArguments: [CONTRACT_ADDRESS, userAddress, profitAmount],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Collect liquidation fee
+ */
+export async function collectLiquidationFee(
+  adminAccount: Account,
+  userAddress: string,
+  liquidatedAmount: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::collect_liquidation_fee`,
+      functionArguments: [CONTRACT_ADDRESS, userAddress, liquidatedAmount],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Withdraw accumulated fees (admin only)
+ */
+export async function withdrawFees(
+  adminAccount: Account,
+  amount: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: adminAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::withdraw_fees`,
+      functionArguments: [CONTRACT_ADDRESS, amount],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: adminAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Get revenue vault balance
+ */
+export async function getVaultBalance(feeCollectorAddress: string): Promise<number> {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::get_vault_balance`,
+      functionArguments: [feeCollectorAddress],
+    },
+  });
+
+  return Number(result[0]);
+}
+
+/**
+ * Get fee configuration
+ */
+export async function getFeeConfig(feeCollectorAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::get_fee_config`,
+      functionArguments: [feeCollectorAddress],
+    },
+  });
+
+  return {
+    tradingFeeBps: Number(result[0]),
+    performanceFeeBps: Number(result[1]),
+    liquidationFeeBps: Number(result[2]),
+  };
+}
+
+/**
+ * Get user subscription details
+ */
+export async function getUserSubscription(userAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::revenue_distributor::get_subscription`,
+      functionArguments: [userAddress],
+    },
+  });
+
+  return {
+    tier: Number(result[0]), // 0 = basic, 1 = premium
+    expiryTime: Number(result[1]),
+    isActive: Boolean(result[2]),
+  };
+}
+
+/**
+ * Check if user has premium subscription
+ */
+export async function hasPremiumSubscription(userAddress: string): Promise<boolean> {
+  try {
+    const sub = await getUserSubscription(userAddress);
+    return sub.isActive && sub.tier === 1;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Calculate optimal weights for rebalancing
+ */
+export async function calculateOptimalWeights(
+  basketId: number,
+  currentWeights: number[],
+  targetVolatility: number
+) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::calculate_optimal_weights`,
+      functionArguments: [basketId, currentWeights, targetVolatility],
+    },
+  });
+
+  return result[0]; // Array of optimal weights
+}
+
+/**
+ * Check if basket should be rebalanced
+ */
+export async function shouldRebalance(
+  strategyAddress: string,
+  currentWeights: number[]
+): Promise<boolean> {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::should_rebalance`,
+      functionArguments: [strategyAddress, currentWeights],
+    },
+  });
+
+  return Boolean(result[0]);
+}
+
+/**
+ * Get recommended leverage based on risk score
+ */
+export async function getRecommendedLeverage(riskScore: number): Promise<number> {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::get_recommended_leverage`,
+      functionArguments: [riskScore],
+    },
+  });
+
+  return Number(result[0]);
+}
+
+/**
+ * Get rebalancing strategy details
+ */
+export async function getStrategy(strategyAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::get_strategy`,
+      functionArguments: [strategyAddress],
+    },
+  });
+
+  return {
+    basketId: Number(result[0]),
+    owner: result[1],
+    targetWeights: result[2],
+    assetSymbols: result[3],
+    volatilityTolerance: Number(result[4]),
+    lastRebalanceTime: Number(result[5]),
+    rebalanceThreshold: Number(result[6]),
+    isAIManaged: Boolean(result[7]),
+  };
+}
+
+/**
+ * Get AI rebalancing stats
+ */
+export async function getAIStats(adminAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::rebalancing_engine::get_ai_stats`,
+      functionArguments: [adminAddress],
+    },
+  });
+
+  return {
+    totalStrategies: Number(result[0]),
+    performanceFeeBps: Number(result[1]),
+    accumulatedFees: Number(result[2]),
+  };
+}
+
+/**
+ * Add collateral to existing position
+ */
+export async function addCollateral(
+  userAccount: Account,
+  positionId: number,
+  additionalCollateral: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: userAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::basket_vault::add_collateral`,
+      functionArguments: [CONTRACT_ADDRESS, positionId, additionalCollateral],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: userAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  
+  return {
+    transactionHash: committedTxn.hash,
+    success: true,
+  };
+}
+
+/**
+ * Liquidate underwater position
+ */
+export async function liquidatePosition(
+  liquidatorAccount: Account,
+  positionOwner: string,
+  positionId: number
+) {
+  const transaction = await aptos.transaction.build.simple({
+    sender: liquidatorAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::basket_vault::liquidate_position`,
+      functionArguments: [CONTRACT_ADDRESS, positionOwner, positionId],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: liquidatorAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  
+  return {
+    transactionHash: committedTxn.hash,
+    success: true,
+    liquidatorReward: 0, // Could be parsed from events
+  };
+}
+
+/**
+ * Get all positions for a user
+ */
+export async function getAllUserPositions(vaultAddress: string, userAddress: string) {
+  const result = await aptos.view({
+    payload: {
+      function: `${CONTRACT_ADDRESS}::basket_vault::get_all_user_positions`,
+      functionArguments: [vaultAddress, userAddress],
+    },
+  });
+
+  return result[0]; // Array of position IDs
+}
+
+/**
+ * Get position health factor
+ */
+export async function getPositionHealth(
+  vaultAddress: string,
+  positionId: number
+): Promise<number> {
+  try {
+    const position = await getPosition(vaultAddress, positionId);
+    const prices = await getOraclePrices(ORACLE_ADDRESS);
+    
+    // Calculate weighted basket value
+    const basketValue = 
+      (position.btcWeight * prices.btcPrice / 100) +
+      (position.ethWeight * prices.ethPrice / 100) +
+      (position.solWeight * prices.solPrice / 100);
+    
+    // Health factor = collateral value / (position size / leverage)
+    const positionSize = position.collateralAmount * position.leverageMultiplier;
+    const healthFactor = (position.collateralAmount * basketValue) / positionSize;
+    
+    return healthFactor;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Monitor position for liquidation (keeper function)
+ */
+export async function checkLiquidationCandidates(vaultAddress: string): Promise<any[]> {
+  const liquidationCandidates = [];
+  
+  try {
+    // Get all positions from vault
+    // This would need a contract function to iterate positions
+    // For now, return empty array
+    console.log('Checking liquidation candidates...');
+  } catch (error) {
+    console.error('Error checking liquidations:', error);
+  }
+  
+  return liquidationCandidates;
+}
+
+/**
+ * Calculate total portfolio value
+ */
+export async function calculatePortfolioValue(
+  positions: any[],
+  oracleAddress: string
+): Promise<number> {
+  const prices = await getOraclePrices(oracleAddress);
+  let totalValue = 0;
+  
+  for (const position of positions) {
+    if (position.isActive) {
+      const basketValue = 
+        (position.btcWeight * prices.btcPrice / 100) +
+        (position.ethWeight * prices.ethPrice / 100) +
+        (position.solWeight * prices.solPrice / 100);
+      
+      totalValue += position.collateralAmount * basketValue;
+    }
+  }
+  
+  return totalValue;
+}
+
+/**
+ * Get platform statistics
+ */
+export async function getPlatformStats() {
+  try {
+    const revenueStats = await getRevenueStats();
+    const aiStats = await getAIStats(CONTRACT_ADDRESS);
+    const vaultBalance = await getVaultBalance(CONTRACT_ADDRESS);
+    
+    return {
+      totalRevenue: revenueStats,
+      aiStrategies: aiStats.totalStrategies,
+      vaultBalance,
+      isHealthy: vaultBalance > 0,
+    };
+  } catch (error) {
+    console.error('Error fetching platform stats:', error);
+    return null;
+  }
+}
+
 export { aptos, CONTRACT_ADDRESS, ORACLE_ADDRESS };

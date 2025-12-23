@@ -518,10 +518,368 @@ function viewInExplorer() {
     window.open(explorerUrl, '_blank');
 }
 
+// Navigation Functions
+function setActiveNav(index) {
+    document.querySelectorAll('.bottom-nav .nav-item').forEach((item, i) => {
+        if (i === index) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+// Market Page Functions
+function loadMarketPage() {
+    const marketGrid = document.getElementById('market-grid');
+    if (!marketGrid) return;
+    
+    const baskets = [
+        {
+            name: 'Mega Cap Index',
+            desc: 'BTC & ETH weighted basket',
+            type: 'long',
+            composition: ['BTC 60%', 'ETH 40%'],
+            tvl: '$12.5M',
+            volume24h: '$3.2M',
+            apy: '+18.5%'
+        },
+        {
+            name: 'DeFi Leaders',
+            desc: 'Top DeFi protocols',
+            type: 'long',
+            composition: ['UNI', 'AAVE', 'COMP'],
+            tvl: '$5.8M',
+            volume24h: '$1.5M',
+            apy: '+24.2%'
+        },
+        {
+            name: 'Layer 1 Mix',
+            desc: 'Leading L1 blockchains',
+            type: 'long',
+            composition: ['SOL', 'AVAX', 'MATIC'],
+            tvl: '$8.3M',
+            volume24h: '$2.1M',
+            apy: '+15.8%'
+        },
+        {
+            name: 'Metaverse Shorts',
+            desc: 'Short metaverse tokens',
+            type: 'short',
+            composition: ['MANA', 'SAND', 'AXS'],
+            tvl: '$3.2M',
+            volume24h: '$890K',
+            apy: '-8.5%'
+        }
+    ];
+    
+    marketGrid.innerHTML = baskets.map(basket => `
+        <div class="market-card" onclick="showBasketBuilder()">
+            <div class="market-card-header">
+                <div>
+                    <div class="market-card-title">${basket.name}</div>
+                    <div class="market-card-desc">${basket.desc}</div>
+                </div>
+                <span class="market-card-badge ${basket.type}">${basket.type.toUpperCase()}</span>
+            </div>
+            <div class="market-composition">
+                ${basket.composition.map(token => `<span class="comp-token">${token}</span>`).join('')}
+            </div>
+            <div class="market-card-stats">
+                <div class="market-stat">
+                    <div class="market-stat-label">TVL</div>
+                    <div class="market-stat-value">${basket.tvl}</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-label">24h Vol</div>
+                    <div class="market-stat-value">${basket.volume24h}</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-label">APY</div>
+                    <div class="market-stat-value ${basket.apy.includes('+') ? 'positive' : ''}">${basket.apy}</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterMarket(type) {
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    // In a real app, filter the market grid here
+}
+
+// Wallet Page Functions
+function loadWalletPage() {
+    renderAssets();
+    renderRecentTransactions();
+}
+
+function renderAssets() {
+    const assetList = document.getElementById('asset-list');
+    if (!assetList) return;
+    
+    const assets = [
+        { name: 'Aptos', ticker: 'APT', amount: '14.52', usd: '$167.50', icon: '🔷' },
+        { name: 'USD Coin', ticker: 'USDC', amount: '5,240.00', usd: '$5,240.00', icon: '💵' },
+        { name: 'Tether', ticker: 'USDT', amount: '2,100.00', usd: '$2,100.00', icon: '💲' },
+        { name: 'Ethereum', ticker: 'ETH', amount: '0.85', usd: '$1,785.00', icon: 'Ξ' }
+    ];
+    
+    assetList.innerHTML = assets.map(asset => `
+        <div class="wallet-asset-card">
+            <div class="wallet-asset-info">
+                <div class="wallet-asset-icon">${asset.icon}</div>
+                <div>
+                    <div class="wallet-asset-name">${asset.name}</div>
+                    <div class="wallet-asset-ticker">${asset.ticker}</div>
+                </div>
+            </div>
+            <div class="wallet-asset-values">
+                <div class="wallet-asset-amount">${asset.amount}</div>
+                <div class="wallet-asset-usd">${asset.usd}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderRecentTransactions() {
+    const txList = document.getElementById('recent-transactions');
+    if (!txList) return;
+    
+    const transactions = [
+        { type: 'Position Opened', time: 'Today, 10:42 AM', amount: '-$2,000', class: 'negative' },
+        { type: 'Deposit', time: 'Yesterday, 3:15 PM', amount: '+$5,000', class: 'positive' },
+        { type: 'Position Closed', time: '2 days ago', amount: '+$1,240', class: 'positive' }
+    ];
+    
+    txList.innerHTML = transactions.map(tx => `
+        <div class="transaction-item">
+            <div class="tx-info">
+                <div class="tx-type">${tx.type}</div>
+                <div class="tx-time">${tx.time}</div>
+            </div>
+            <div class="tx-amount ${tx.class}">${tx.amount}</div>
+        </div>
+    `).join('');
+}
+
+function copyWalletAddress() {
+    const addr = '0x9291fd7e660da4d4a49821392202d34111e26dfa73b630ce1a8d713ec068e5a7';
+    navigator.clipboard.writeText(addr);
+    alert('✓ Address copied!');
+}
+
+// History Page Functions
+function loadHistoryPage() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
+    
+    const history = [
+        {
+            type: 'Position Opened',
+            date: 'Today, 10:42 AM',
+            amount: '$10,000',
+            basket: 'Mega Cap Index',
+            leverage: '5x LONG',
+            status: 'Active'
+        },
+        {
+            type: 'Margin Added',
+            date: 'Today, 10:30 AM',
+            amount: '+$500',
+            basket: 'Metaverse 3x',
+            leverage: '3x LONG',
+            status: 'Completed'
+        },
+        {
+            type: 'Position Closed',
+            date: 'Yesterday, 2:15 PM',
+            amount: '+$1,240.50',
+            basket: 'DeFi Leaders',
+            leverage: '2x LONG',
+            status: 'Completed'
+        }
+    ];
+    
+    historyList.innerHTML = history.map(item => `
+        <div class="history-card-item">
+            <div class="history-card-header">
+                <div>
+                    <div class="history-type">${item.type}</div>
+                    <div class="history-date">${item.date}</div>
+                </div>
+                <div class="history-amount ${item.amount.includes('+') ? 'positive' : ''}">${item.amount}</div>
+            </div>
+            <div class="history-details">
+                <div class="history-detail-item">
+                    <div class="history-detail-label">Basket</div>
+                    <div class="history-detail-value">${item.basket}</div>
+                </div>
+                <div class="history-detail-item">
+                    <div class="history-detail-label">Leverage</div>
+                    <div class="history-detail-value">${item.leverage}</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterHistory(type) {
+    document.querySelectorAll('.filter-bar .filter-chip').forEach(chip => {
+        chip.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    // In a real app, filter history here
+}
+
+function exportHistory() {
+    alert('📥 Exporting transaction history as CSV...');
+}
+
+// Settings Functions
+function disconnectWallet() {
+    if (confirm('Are you sure you want to disconnect your wallet?')) {
+        account = null;
+        showPage('landing-page');
+    }
+}
+
+// Deposit Modal Functions
+function openDepositModal() {
+    document.getElementById('deposit-modal').classList.add('active');
+}
+
+function closeDepositModal() {
+    document.getElementById('deposit-modal').classList.remove('active');
+}
+
+function copyDepositAddress() {
+    const addr = document.getElementById('deposit-address').textContent;
+    navigator.clipboard.writeText(addr);
+    alert('✓ Address copied to clipboard!');
+}
+
+// Withdraw Modal Functions
+function openWithdrawModal() {
+    document.getElementById('withdraw-modal').classList.add('active');
+}
+
+function closeWithdrawModal() {
+    document.getElementById('withdraw-modal').classList.remove('active');
+}
+
+function setMaxWithdraw() {
+    const balance = parseFloat(document.getElementById('available-balance').textContent);
+    document.getElementById('withdraw-amount').value = balance - 0.005; // Minus fee
+}
+
+async function executeWithdraw() {
+    const amount = document.getElementById('withdraw-amount').value;
+    const address = document.getElementById('withdraw-address').value;
+    
+    if (!amount || !address) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    const button = event.target;
+    button.textContent = '⏳ Processing...';
+    button.disabled = true;
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        alert('✅ Withdrawal initiated successfully!');
+        closeWithdrawModal();
+        loadWalletPage();
+    } catch (error) {
+        alert('❌ Withdrawal failed: ' + error.message);
+    } finally {
+        button.textContent = 'Confirm Withdrawal';
+        button.disabled = false;
+    }
+}
+
+// Swap Modal Functions
+function openSwapModal() {
+    document.getElementById('swap-modal').classList.add('active');
+    updateSwapEstimate();
+}
+
+function closeSwapModal() {
+    document.getElementById('swap-modal').classList.remove('active');
+}
+
+function swapTokens() {
+    const fromToken = document.getElementById('from-token');
+    const toToken = document.getElementById('to-token');
+    const temp = fromToken.value;
+    fromToken.value = toToken.value;
+    toToken.value = temp;
+    updateSwapEstimate();
+}
+
+function updateSwapEstimate() {
+    const fromAmount = parseFloat(document.getElementById('from-amount').value) || 0;
+    const rate = 11.50; // Example rate
+    document.getElementById('to-amount').value = (fromAmount * rate).toFixed(2);
+}
+
+async function executeSwap() {
+    const fromAmount = document.getElementById('from-amount').value;
+    
+    if (!fromAmount || fromAmount <= 0) {
+        alert('Please enter an amount to swap');
+        return;
+    }
+    
+    const button = event.target;
+    button.textContent = '⏳ Swapping...';
+    button.disabled = true;
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        alert('✅ Swap completed successfully!');
+        closeSwapModal();
+        loadWalletPage();
+    } catch (error) {
+        alert('❌ Swap failed: ' + error.message);
+    } finally {
+        button.textContent = 'Swap';
+        button.disabled = false;
+    }
+}
+
 // Initialize on load
 window.addEventListener('load', () => {
     // Check if coming from wallet connect
     if (window.location.hash === '#dashboard') {
         showDashboard();
+    }
+    
+    // Load page data when pages become active
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'class') {
+                const page = mutation.target;
+                if (page.classList.contains('active')) {
+                    if (page.id === 'market-page') loadMarketPage();
+                    if (page.id === 'wallet-page') loadWalletPage();
+                    if (page.id === 'history-page') loadHistoryPage();
+                }
+            }
+        });
+    });
+    
+    document.querySelectorAll('.page').forEach(page => {
+        observer.observe(page, { attributes: true });
+    });
+    
+    // Listen for swap amount changes
+    const fromAmountInput = document.getElementById('from-amount');
+    if (fromAmountInput) {
+        fromAmountInput.addEventListener('input', updateSwapEstimate);
     }
 });

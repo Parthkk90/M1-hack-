@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cresca - Trade Diversified Crypto, One Position</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="pages-styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -122,23 +123,366 @@
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active">
+            <button class="nav-item active" onclick="showPage('dashboard-page'); setActiveNav(0)">
                 <span>🏠</span>
                 Home
             </button>
-            <button class="nav-item">
+            <button class="nav-item" onclick="showPage('market-page'); setActiveNav(1)">
                 <span>📊</span>
                 Market
             </button>
-            <button class="nav-item">
+            <button class="nav-item" onclick="showPage('wallet-page'); setActiveNav(2)">
                 <span>💳</span>
                 Wallet
             </button>
-            <button class="nav-item">
+            <button class="nav-item" onclick="showPage('settings-page'); setActiveNav(3)">
                 <span>⚙️</span>
                 Settings
             </button>
         </nav>
+    </div>
+
+    <!-- Market Page -->
+    <div id="market-page" class="page">
+        <nav class="navbar">
+            <div class="logo">
+                <div class="logo-icon">🎯</div>
+                <div>
+                    <h2>Cresca</h2>
+                    <p class="subtitle">Basket Protocol</p>
+                </div>
+            </div>
+            <div class="network-badge">
+                <span class="dot"></span>
+                Movement
+            </div>
+        </nav>
+
+        <main class="market-container">
+            <div class="page-header">
+                <h1>Market</h1>
+                <p class="page-subtitle">Discover and trade diversified crypto baskets</p>
+            </div>
+
+            <div class="search-filter-bar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search baskets..." id="market-search">
+                </div>
+                <div class="filter-chips">
+                    <button class="filter-chip active" onclick="filterMarket('all')">All</button>
+                    <button class="filter-chip" onclick="filterMarket('long')">Long Only</button>
+                    <button class="filter-chip" onclick="filterMarket('short')">Short Only</button>
+                    <button class="filter-chip" onclick="filterMarket('new')">New</button>
+                </div>
+            </div>
+
+            <div class="market-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total TVL</div>
+                    <div class="stat-value">$24.5M</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">24h Volume</div>
+                    <div class="stat-value">$8.2M</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Traders</div>
+                    <div class="stat-value">1,247</div>
+                </div>
+            </div>
+
+            <h3 class="section-title">🔥 Trending Baskets</h3>
+            <div class="market-grid" id="market-grid">
+                <!-- Market cards will be rendered here -->
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item" onclick="showPage('dashboard-page'); setActiveNav(0)">
+                <span>🏠</span>
+                Home
+            </button>
+            <button class="nav-item active" onclick="showPage('market-page'); setActiveNav(1)">
+                <span>📊</span>
+                Market
+            </button>
+            <button class="nav-item" onclick="showPage('wallet-page'); setActiveNav(2)">
+                <span>💳</span>
+                Wallet
+            </button>
+            <button class="nav-item" onclick="showPage('settings-page'); setActiveNav(3)">
+                <span>⚙️</span>
+                Settings
+            </button>
+        </nav>
+    </div>
+
+    <!-- Wallet Page -->
+    <div id="wallet-page" class="page">
+        <nav class="navbar">
+            <div class="logo">
+                <div class="logo-icon">🎯</div>
+                <div>
+                    <h2>Cresca</h2>
+                    <p class="subtitle">Basket Protocol</p>
+                </div>
+            </div>
+            <div class="network-badge">
+                <span class="dot"></span>
+                Movement
+            </div>
+        </nav>
+
+        <main class="wallet-container">
+            <div class="page-header">
+                <h1>Wallet</h1>
+                <p class="page-subtitle">Manage your assets and transactions</p>
+            </div>
+
+            <div class="wallet-balance-card">
+                <div class="balance-header">
+                    <div>
+                        <div class="balance-label">Total Balance</div>
+                        <div class="balance-amount" id="wallet-balance">$18,450.75</div>
+                    </div>
+                    <div class="wallet-address">
+                        <span id="wallet-addr">0x9291...e5a7</span>
+                        <button class="copy-btn" onclick="copyWalletAddress()">📋</button>
+                    </div>
+                </div>
+                <div class="balance-change positive">+$1,240.50 (7.2%) today</div>
+            </div>
+
+            <div class="wallet-actions">
+                <button class="wallet-action-btn" onclick="openDepositModal()">
+                    <span class="action-icon">⬇️</span>
+                    Deposit
+                </button>
+                <button class="wallet-action-btn" onclick="openWithdrawModal()">
+                    <span class="action-icon">⬆️</span>
+                    Withdraw
+                </button>
+                <button class="wallet-action-btn" onclick="openSwapModal()">
+                    <span class="action-icon">🔄</span>
+                    Swap
+                </button>
+                <button class="wallet-action-btn" onclick="showPage('history-page')">
+                    <span class="action-icon">📜</span>
+                    History
+                </button>
+            </div>
+
+            <h3 class="section-title">Your Assets</h3>
+            <div class="asset-list-container" id="asset-list">
+                <!-- Assets will be rendered here -->
+            </div>
+
+            <h3 class="section-title">Recent Transactions</h3>
+            <div class="transaction-list" id="recent-transactions">
+                <!-- Recent transactions will be rendered here -->
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item" onclick="showPage('dashboard-page'); setActiveNav(0)">
+                <span>🏠</span>
+                Home
+            </button>
+            <button class="nav-item" onclick="showPage('market-page'); setActiveNav(1)">
+                <span>📊</span>
+                Market
+            </button>
+            <button class="nav-item active" onclick="showPage('wallet-page'); setActiveNav(2)">
+                <span>💳</span>
+                Wallet
+            </button>
+            <button class="nav-item" onclick="showPage('settings-page'); setActiveNav(3)">
+                <span>⚙️</span>
+                Settings
+            </button>
+        </nav>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="settings-page" class="page">
+        <nav class="navbar">
+            <div class="logo">
+                <div class="logo-icon">🎯</div>
+                <div>
+                    <h2>Cresca</h2>
+                    <p class="subtitle">Basket Protocol</p>
+                </div>
+            </div>
+            <div class="network-badge">
+                <span class="dot"></span>
+                Movement
+            </div>
+        </nav>
+
+        <main class="settings-container">
+            <div class="page-header">
+                <h1>Settings</h1>
+                <p class="page-subtitle">Customize your trading experience</p>
+            </div>
+
+            <div class="settings-section">
+                <h3>Account</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Connected Wallet</div>
+                        <div class="setting-value">0x9291...e5a7</div>
+                    </div>
+                    <button class="btn-secondary-small" onclick="disconnectWallet()">Disconnect</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Notifications</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Position Alerts</div>
+                        <div class="setting-description">Get notified about your positions</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Price Alerts</div>
+                        <div class="setting-description">Alerts when prices change</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Liquidation Warnings</div>
+                        <div class="setting-description">Get warned before liquidation</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Display</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Theme</div>
+                        <div class="setting-description">Choose your theme</div>
+                    </div>
+                    <select class="settings-select">
+                        <option>Light</option>
+                        <option>Dark</option>
+                        <option>Auto</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Currency</div>
+                        <div class="setting-description">Display currency</div>
+                    </div>
+                    <select class="settings-select">
+                        <option>USD</option>
+                        <option>EUR</option>
+                        <option>GBP</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Trading</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Slippage Tolerance</div>
+                        <div class="setting-description">Maximum price slippage</div>
+                    </div>
+                    <select class="settings-select">
+                        <option>0.5%</option>
+                        <option selected>1.0%</option>
+                        <option>2.0%</option>
+                        <option>Custom</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="setting-label">Expert Mode</div>
+                        <div class="setting-description">Advanced trading features</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>About</h3>
+                <div class="settings-item">
+                    <div class="setting-label">Version</div>
+                    <div class="setting-value">2.0.0</div>
+                </div>
+                <div class="settings-item clickable" onclick="window.open('https://docs.cresca.io', '_blank')">
+                    <div class="setting-label">Documentation</div>
+                    <span class="arrow-icon">→</span>
+                </div>
+                <div class="settings-item clickable" onclick="window.open('https://discord.gg/cresca', '_blank')">
+                    <div class="setting-label">Support & Community</div>
+                    <span class="arrow-icon">→</span>
+                </div>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item" onclick="showPage('dashboard-page'); setActiveNav(0)">
+                <span>🏠</span>
+                Home
+            </button>
+            <button class="nav-item" onclick="showPage('market-page'); setActiveNav(1)">
+                <span>📊</span>
+                Market
+            </button>
+            <button class="nav-item" onclick="showPage('wallet-page'); setActiveNav(2)">
+                <span>💳</span>
+                Wallet
+            </button>
+            <button class="nav-item active" onclick="showPage('settings-page'); setActiveNav(3)">
+                <span>⚙️</span>
+                Settings
+            </button>
+        </nav>
+    </div>
+
+    <!-- History Page -->
+    <div id="history-page" class="page">
+        <nav class="navbar">
+            <button class="back-btn" onclick="showPage('wallet-page')">←</button>
+            <div>
+                <h2>Transaction History</h2>
+            </div>
+            <button class="export-btn" onclick="exportHistory()">📥</button>
+        </nav>
+
+        <main class="history-container">
+            <div class="filter-bar">
+                <button class="filter-chip active" onclick="filterHistory('all')">All</button>
+                <button class="filter-chip" onclick="filterHistory('opened')">Opened</button>
+                <button class="filter-chip" onclick="filterHistory('closed')">Closed</button>
+                <button class="filter-chip" onclick="filterHistory('margin')">Margin</button>
+                <button class="filter-chip" onclick="filterHistory('liquidated')">Liquidated</button>
+            </div>
+
+            <div class="history-list" id="history-list">
+                <!-- History items will be rendered here -->
+            </div>
+        </main>
     </div>
 
     <!-- Basket Builder -->
@@ -535,6 +879,166 @@
             </button>
 
             <a href="#" class="explorer-link" onclick="viewInExplorer()">View in Block Explorer</a>
+        </div>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div id="deposit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Deposit Funds</h2>
+                <button class="close-modal" onclick="closeDepositModal()">✕</button>
+            </div>
+
+            <div class="qr-section">
+                <div class="qr-code">
+                    <div class="qr-placeholder">📱</div>
+                </div>
+                <p class="qr-label">Scan QR Code to Deposit</p>
+            </div>
+
+            <div class="address-section">
+                <div class="address-label">Your Deposit Address</div>
+                <div class="address-box">
+                    <span id="deposit-address">0x9291fd7e660da4d4a49821392202d34111e26dfa73b630ce1a8d713ec068e5a7</span>
+                    <button class="copy-btn-inline" onclick="copyDepositAddress()">📋</button>
+                </div>
+            </div>
+
+            <div class="supported-assets">
+                <h4>Supported Assets</h4>
+                <div class="asset-chips">
+                    <span class="asset-chip">APT</span>
+                    <span class="asset-chip">USDC</span>
+                    <span class="asset-chip">USDT</span>
+                    <span class="asset-chip">ETH</span>
+                </div>
+            </div>
+
+            <div class="warning-info">
+                <span class="info-icon">ℹ️</span>
+                <div>
+                    <div class="info-title">Important</div>
+                    <div class="info-text">Only send Movement Network assets to this address. Minimum deposit: 0.1 APT</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdraw-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Withdraw Funds</h2>
+                <button class="close-modal" onclick="closeWithdrawModal()">✕</button>
+            </div>
+
+            <div class="input-section">
+                <label>Asset</label>
+                <select class="input-field" id="withdraw-asset">
+                    <option value="APT">APT - Aptos</option>
+                    <option value="USDC">USDC - USD Coin</option>
+                    <option value="USDT">USDT - Tether</option>
+                </select>
+            </div>
+
+            <div class="input-section">
+                <label>Available Balance</label>
+                <div class="balance-info">
+                    <span id="available-balance">14.52 APT</span>
+                    <button class="max-btn" onclick="setMaxWithdraw()">MAX</button>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <label>Amount</label>
+                <input type="number" class="input-field" id="withdraw-amount" placeholder="0.00">
+            </div>
+
+            <div class="input-section">
+                <label>Destination Address</label>
+                <input type="text" class="input-field" id="withdraw-address" placeholder="0x...">
+            </div>
+
+            <div class="fee-estimate">
+                <div class="fee-row">
+                    <span>Network Fee</span>
+                    <span id="withdraw-fee">~0.005 APT</span>
+                </div>
+                <div class="fee-row">
+                    <span>You will receive</span>
+                    <span id="withdraw-receive">0.00 APT</span>
+                </div>
+            </div>
+
+            <button class="btn-primary full-width" onclick="executeWithdraw()">
+                Confirm Withdrawal
+            </button>
+        </div>
+    </div>
+
+    <!-- Swap Modal -->
+    <div id="swap-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Swap Assets</h2>
+                <button class="close-modal" onclick="closeSwapModal()">✕</button>
+            </div>
+
+            <div class="swap-container">
+                <div class="swap-input-box">
+                    <div class="swap-header">
+                        <label>From</label>
+                        <span class="balance-small">Balance: <span id="from-balance">14.52</span></span>
+                    </div>
+                    <div class="swap-input-row">
+                        <input type="number" class="swap-amount" id="from-amount" placeholder="0.0">
+                        <select class="token-select" id="from-token">
+                            <option value="APT">APT</option>
+                            <option value="USDC">USDC</option>
+                            <option value="USDT">USDT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="swap-arrow-container">
+                    <button class="swap-arrow-btn" onclick="swapTokens()">⇅</button>
+                </div>
+
+                <div class="swap-input-box">
+                    <div class="swap-header">
+                        <label>To</label>
+                        <span class="balance-small">Balance: <span id="to-balance">0.00</span></span>
+                    </div>
+                    <div class="swap-input-row">
+                        <input type="number" class="swap-amount" id="to-amount" placeholder="0.0" readonly>
+                        <select class="token-select" id="to-token">
+                            <option value="USDC">USDC</option>
+                            <option value="APT">APT</option>
+                            <option value="USDT">USDT</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="swap-info">
+                <div class="info-row">
+                    <span>Exchange Rate</span>
+                    <span id="exchange-rate">1 APT = 11.50 USDC</span>
+                </div>
+                <div class="info-row">
+                    <span>Price Impact</span>
+                    <span id="price-impact" class="positive">< 0.1%</span>
+                </div>
+                <div class="info-row">
+                    <span>Slippage Tolerance</span>
+                    <span>1.0%</span>
+                </div>
+            </div>
+
+            <button class="btn-primary full-width" onclick="executeSwap()">
+                Swap
+            </button>
         </div>
     </div>
 

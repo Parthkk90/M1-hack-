@@ -9,6 +9,7 @@ const ORACLE_ADDRESS = "0xcafe";
 
 // Initialize Aptos client for Movement Network (hardcoded config for mobile)
 const config = new AptosConfig({ 
+  network: Network.CUSTOM,
   fullnode: "https://testnet.movementnetwork.xyz/v1",
   faucet: "https://faucet.testnet.movementnetwork.xyz"
 });

@@ -14,7 +14,9 @@ import PositionDetailsScreen from './src/screens/PositionDetailsScreen';
 import ClosePositionModal from './src/screens/ClosePositionModal';
 import SuccessModal from './src/screens/SuccessModal';
 import DepositModal from './src/screens/DepositModal';
+import DepositScreen from './src/screens/DepositScreen';
 import WithdrawModal from './src/screens/WithdrawModal';
+import WithdrawScreen from './src/screens/WithdrawScreen';
 import SwapModal from './src/screens/SwapModal';
 import SchedulePaymentScreen from './src/screens/SchedulePaymentScreen';
 
@@ -36,7 +38,9 @@ export default function App() {
           <Stack.Screen name="PositionDetails" component={PositionDetailsScreen} />
           <Stack.Screen name="ClosePositionModal" component={ClosePositionModal} />
           <Stack.Screen name="SuccessModal" component={SuccessModal} />
+          <Stack.Screen name="Deposit" component={DepositScreen} />
           <Stack.Screen name="DepositModal" component={DepositModal} />
+          <Stack.Screen name="Withdraw" component={WithdrawScreen} />
           <Stack.Screen name="WithdrawModal" component={WithdrawModal} />
           <Stack.Screen name="SwapModal" component={SwapModal} />
           <Stack.Screen name="Schedule" component={SchedulePaymentScreen} />

@@ -72,28 +72,29 @@ export const blockchain = {
 export const api = {
   fetchMarketData: async () => {
     try {
-      // Fetch real oracle prices
-      const prices = await sdk.getOraclePrices(sdk.ORACLE_ADDRESS);
+      // Return mock data since contracts are not deployed yet
+      // TODO: Fetch real oracle prices when contracts are deployed
+      // const prices = await sdk.getOraclePrices(sdk.ORACLE_ADDRESS);
       
       return [
         {
           symbol: 'BTC',
           name: 'Bitcoin',
-          price: Number(prices.btcPrice) / 100, // Convert from basis points
-          change24h: 5.2, // Mock for now
+          price: 42500, // Mock price
+          change24h: 5.2,
           icon: '₿',
         },
         {
           symbol: 'ETH',
           name: 'Ethereum',
-          price: Number(prices.ethPrice) / 100,
+          price: 2250, // Mock price
           change24h: 3.8,
           icon: 'Ξ',
         },
         {
           symbol: 'SOL',
           name: 'Solana',
-          price: Number(prices.solPrice) / 100,
+          price: 98, // Mock price
           change24h: -1.2,
           icon: '◎',
         },
@@ -115,36 +116,29 @@ export const api = {
     }
     
     try {
-      // Fetch user's positions from contract
-      const positionIds = await sdk.getAllUserPositions(
-        sdk.CONTRACT_ADDRESS,
-        currentAccount.accountAddress.toString()
-      );
+      // Return mock positions since contracts are not deployed yet
+      // TODO: Fetch real positions when contracts are deployed
+      return [];
+      
+      // Original code to use when contracts are deployed:
+      // const positionIds = await sdk.getAllUserPositions(
+      //   sdk.CONTRACT_ADDRESS,
+      //   currentAccount.accountAddress.toString()
+      // );
+      // ... fetch and return real positions
       
       const positions = [];
-      for (const positionId of positionIds) {
-        try {
-          const position = await sdk.getPosition(sdk.CONTRACT_ADDRESS, positionId);
-          
-          if (position.isActive) {
-            positions.push({
-              id: positionId,
-              type: position.isLong ? 'Long' : 'Short',
-              assets: [
-                { symbol: 'BTC', weight: position.btcWeight },
-                { symbol: 'ETH', weight: position.ethWeight },
-                { symbol: 'SOL', weight: position.solWeight },
-              ],
-              collateral: Number(position.collateralAmount) / 100000000,
-              leverage: position.leverageMultiplier,
-              pnl: 0, // Calculate from current prices
-              pnlPercentage: 0,
-            });
-          }
-        } catch (error) {
-          console.error(`Failed to fetch position ${positionId}:`, error);
-        }
-      }
+      // Code commented out until contracts are deployed
+      // for (const positionId of positionIds) {
+      //   try {
+      //     const position = await sdk.getPosition(sdk.CONTRACT_ADDRESS, positionId);
+      //     if (position.isActive) {
+      //       positions.push({ ... });
+      //     }
+      //   } catch (error) {
+      //     console.error(`Failed to fetch position ${positionId}:`, error);
+      //   }
+      // }
       
       return positions;
     } catch (error) {
@@ -180,40 +174,31 @@ export const api = {
     return `Swapped ${amount} ${from} to ${to}`;
   },
 
-  openPosition: async (
-    collateral: number,
-    leverage: number,
-    btcWeight: number,
-    ethWeight: number,
-    solWeight: number,
-    isLong: boolean = true
-  ) => {
+  openPosition: async (basketWeights: any, collateral: number, leverage: number, isLong: boolean) => {
     if (!currentAccount) {
       throw new Error('Wallet not connected');
     }
     
     try {
-      // Convert APT to octas
-      const collateralOctas = Math.floor(collateral * 100000000);
-      
-      const result = await sdk.openPosition(
-        currentAccount,
-        collateralOctas,
-        leverage,
-        btcWeight,
-        ethWeight,
-        solWeight,
-        isLong
-      );
+      // Mock response until contracts are deployed
+      console.log('Position would be created with:', { basketWeights, collateral, leverage, isLong });
       
       return {
-        success: result.success,
-        transactionHash: result.transactionHash,
-        message: `Position opened with ${leverage}x leverage`,
+        success: true,
+        transactionHash: '0x' + Math.random().toString(16).substr(2, 64),
+        message: `Mock: Position opened with ${leverage}x leverage (contracts not deployed)`,
       };
+      
+      // Original code to use when contracts are deployed:
+      // const collateralOctas = Math.floor(collateral * 100000000);
+      // const result = await sdk.openPosition(...);
+      // return { success: result.success, transactionHash: result.transactionHash, message: ... };
+      //   isLong
+      // );
+      // return { success: result.success, transactionHash: result.transactionHash, message: ... };
     } catch (error: any) {
-      console.error('Failed to open position:', error);
-      throw new Error('Failed to open position: ' + error.message);
+      console.error('Failed to create position:', error);
+      throw new Error('Failed to create position: ' + error.message);
     }
   },
 

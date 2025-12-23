@@ -4,8 +4,9 @@ import { Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../components/integration';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../theme';
+import BottomTabNavigator from '../navigation/BottomTabNavigator';
 
-export default function SchedulePaymentScreen() {
+function SchedulePaymentScreen() {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -511,3 +512,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default function SchedulePaymentScreenWithNav() {
+  return (
+    <View style={{ flex: 1 }}>
+      <SchedulePaymentScreen />
+      <BottomTabNavigator />
+    </View>
+  );
+}

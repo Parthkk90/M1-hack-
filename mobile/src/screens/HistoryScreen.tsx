@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../components/integration';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../theme';
+import BottomTabNavigator from '../navigation/BottomTabNavigator';
 
 interface Transaction {
   type: string;
@@ -15,7 +16,7 @@ interface Transaction {
   direction: 'sent' | 'received';
 }
 
-export default function HistoryScreen() {
+function HistoryScreen() {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<'latest' | 'oldest' | 'thisWeek'>('latest');
   const [refreshing, setRefreshing] = useState(false);
@@ -293,3 +294,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 });
+
+export default function HistoryScreenWithNav() {
+  return (
+    <View style={{ flex: 1 }}>
+      <HistoryScreen />
+      <BottomTabNavigator />
+    </View>
+  );
+}

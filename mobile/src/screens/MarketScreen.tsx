@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Title, Card, Chip } from 'react-native-paper';
+import BottomTabNavigator from '../navigation/BottomTabNavigator';
 
 const baskets = [
   { name: 'Mega Cap Index', desc: 'BTC & ETH weighted basket', type: 'LONG', tvl: '$12.5M', apy: '+18.5%' },
@@ -9,7 +10,7 @@ const baskets = [
   { name: 'Metaverse Shorts', desc: 'Short metaverse tokens', type: 'SHORT', tvl: '$3.2M', apy: '-8.5%' },
 ];
 
-export default function MarketScreen() {
+function MarketScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
       <Title style={styles.title}>Market</Title>
@@ -40,3 +41,12 @@ const styles = StyleSheet.create({
   long: { backgroundColor: '#10b981', color: '#fff' },
   short: { backgroundColor: '#ef4444', color: '#fff' },
 });
+
+export default function MarketScreenWithNav() {
+  return (
+    <View style={{ flex: 1 }}>
+      <MarketScreen />
+      <BottomTabNavigator />
+    </View>
+  );
+}

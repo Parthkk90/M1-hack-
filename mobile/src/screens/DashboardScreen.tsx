@@ -5,8 +5,9 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { blockchain, api } from '../components/integration';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../theme';
+import BottomTabNavigator from '../navigation/BottomTabNavigator';
 
-export default function DashboardScreen() {
+function DashboardScreen() {
   const navigation = useNavigation();
   const [balance, setBalance] = useState(0);
   const [balanceUSD, setBalanceUSD] = useState(0);
@@ -389,3 +390,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default function DashboardScreenWithNav() {
+  return (
+    <View style={{ flex: 1 }}>
+      <DashboardScreen />
+      <BottomTabNavigator />
+    </View>
+  );
+}

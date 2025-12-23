@@ -6,8 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { api } from '../components/integration';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../theme';
+import BottomTabNavigator from '../navigation/BottomTabNavigator';
 
-export default function BasketBuilderScreen() {
+function BasketBuilderScreen() {
   const navigation = useNavigation();
   const [btcWeight, setBtcWeight] = useState(50);
   const [ethWeight, setEthWeight] = useState(30);
@@ -463,3 +464,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default function BasketBuilderScreenWithNav() {
+  return (
+    <View style={{ flex: 1 }}>
+      <BasketBuilderScreen />
+      <BottomTabNavigator />
+    </View>
+  );
+}

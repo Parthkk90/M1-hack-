@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Title, List, Switch, Button } from 'react-native-paper';
+import BottomTabNavigator from '../navigation/BottomTabNavigator';
 
-export default function SettingsScreen() {
+function SettingsScreen() {
   const [notif, setNotif] = React.useState(true);
   const [expert, setExpert] = React.useState(false);
   return (
@@ -25,3 +26,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0f' },
   title: { color: '#fff', marginBottom: 12 },
 });
+
+export default function SettingsScreenWithNav() {
+  return (
+    <View style={{ flex: 1 }}>
+      <SettingsScreen />
+      <BottomTabNavigator />
+    </View>
+  );
+}

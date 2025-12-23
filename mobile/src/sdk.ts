@@ -3,9 +3,9 @@
 
 import { Aptos, AptosConfig, Network, Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 
-// Contract addresses (hardcoded for mobile)
-const CONTRACT_ADDRESS = "0xcafe";
-const ORACLE_ADDRESS = "0xcafe";
+// Contract addresses (hardcoded for mobile) - padded to 64 characters
+const CONTRACT_ADDRESS = "0x000000000000000000000000000000000000000000000000000000000000cafe";
+const ORACLE_ADDRESS = "0x000000000000000000000000000000000000000000000000000000000000cafe";
 
 // Initialize Aptos client for Movement Network (hardcoded config for mobile)
 const config = new AptosConfig({ 

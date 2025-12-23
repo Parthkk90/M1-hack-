@@ -16,6 +16,7 @@ import SuccessModal from './src/screens/SuccessModal';
 import DepositModal from './src/screens/DepositModal';
 import WithdrawModal from './src/screens/WithdrawModal';
 import SwapModal from './src/screens/SwapModal';
+import SchedulePaymentScreen from './src/screens/SchedulePaymentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +39,7 @@ export default function App() {
           <Stack.Screen name="DepositModal" component={DepositModal} />
           <Stack.Screen name="WithdrawModal" component={WithdrawModal} />
           <Stack.Screen name="SwapModal" component={SwapModal} />
+          <Stack.Screen name="Schedule" component={SchedulePaymentScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

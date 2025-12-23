@@ -1,5 +1,5 @@
 // Real blockchain and API integration with Movement Baskets SDK
-import * as sdk from '../../../src/sdk';
+import * as sdk from '../sdk';
 import { Account } from '@aptos-labs/ts-sdk';
 
 // Wallet state management

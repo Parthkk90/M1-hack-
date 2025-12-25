@@ -17,6 +17,8 @@ module cresca::payment_scheduler {
     const SCHEDULE_ONE_TIME: u8 = 0;
     const SCHEDULE_RECURRING: u8 = 1;
 
+    
+
     /// Recurrence intervals (in seconds)
     const INTERVAL_DAILY: u64 = 86400;        // 24 hours
     const INTERVAL_WEEKLY: u64 = 604800;      // 7 days

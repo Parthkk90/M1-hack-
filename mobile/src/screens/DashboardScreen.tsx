@@ -117,22 +117,12 @@ function DashboardScreen() {
             </View>
             <Text style={styles.actionLabel}>Receive</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('BasketBuilder' as never)}
-          >
-            <View style={[styles.actionCircle, { backgroundColor: Colors.primary }]}>
-              <Ionicons name="swap-horizontal" size={24} color="#FFF" />
-            </View>
-            <Text style={styles.actionLabel}>Trade</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Positions Section */}
+        {/* Recent Transactions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Positions</Text>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
             <TouchableOpacity>
               <Ionicons name="refresh" size={20} color={Colors.textSecondary} />
             </TouchableOpacity>

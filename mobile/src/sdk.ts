@@ -4,8 +4,8 @@
 import { Aptos, AptosConfig, Network, Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 
 // Contract addresses (hardcoded for mobile) - padded to 64 characters
-const CONTRACT_ADDRESS = "0x000000000000000000000000000000000000000000000000000000000000cafe";
-const ORACLE_ADDRESS = "0x000000000000000000000000000000000000000000000000000000000000cafe";
+const CONTRACT_ADDRESS = "0x9291fd7e660da4d4a49821392202d34111e26dfa73b630ce1a8d713ec068e5a7";
+const ORACLE_ADDRESS = "0x9291fd7e660da4d4a49821392202d34111e26dfa73b630ce1a8d713ec068e5a7";
 
 // Initialize Aptos client for Movement Network (hardcoded config for mobile)
 const config = new AptosConfig({ 
@@ -1193,6 +1193,117 @@ export async function getPlatformStats() {
     console.error('Error fetching platform stats:', error);
     return null;
   }
+}
+
+/**
+ * Simple Wallet Functions - Send & Receive Testnet Tokens
+ */
+
+/**
+ * Send tokens to a recipient
+ */
+export async function sendTokens(
+  senderAccount: Account,
+  recipientAddress: string,
+  amount: number
+): Promise<string> {
+  const transaction = await aptos.transaction.build.simple({
+    sender: senderAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::simple_wallet::send`,
+      functionArguments: [recipientAddress, amount],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: senderAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Get account balance
+ */
+export async function getBalance(accountAddress: string): Promise<number> {
+  try {
+    const balance = await aptos.view({
+      payload: {
+        function: `${CONTRACT_ADDRESS}::simple_wallet::get_balance`,
+        functionArguments: [accountAddress],
+      },
+    });
+    return Number(balance[0]);
+  } catch (error) {
+    console.error('Error fetching balance:', error);
+    return 0;
+  }
+}
+
+/**
+ * Register account to receive tokens
+ */
+export async function registerAccount(account: Account): Promise<string> {
+  const transaction = await aptos.transaction.build.simple({
+    sender: account.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::simple_wallet::register`,
+      functionArguments: [],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: account,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
+}
+
+/**
+ * Check if account is registered
+ */
+export async function isAccountRegistered(accountAddress: string): Promise<boolean> {
+  try {
+    const exists = await aptos.view({
+      payload: {
+        function: `${CONTRACT_ADDRESS}::simple_wallet::account_exists`,
+        functionArguments: [accountAddress],
+      },
+    });
+    return Boolean(exists[0]);
+  } catch (error) {
+    console.error('Error checking account:', error);
+    return false;
+  }
+}
+
+/**
+ * Batch send tokens to multiple recipients
+ */
+export async function sendBatch(
+  senderAccount: Account,
+  recipients: string[],
+  amounts: number[]
+): Promise<string> {
+  const transaction = await aptos.transaction.build.simple({
+    sender: senderAccount.accountAddress,
+    data: {
+      function: `${CONTRACT_ADDRESS}::simple_wallet::send_batch`,
+      functionArguments: [recipients, amounts],
+    },
+  });
+
+  const committedTxn = await aptos.signAndSubmitTransaction({
+    signer: senderAccount,
+    transaction,
+  });
+
+  await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+  return committedTxn.hash;
 }
 
 export { aptos, CONTRACT_ADDRESS, ORACLE_ADDRESS };

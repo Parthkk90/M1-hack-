@@ -25,8 +25,8 @@ export default function BottomTabNavigator() {
 
   const tabs = [
     { icon: '🏠', label: 'Home', routeName: 'Dashboard' },
-    { icon: '📊', label: 'Markets', routeName: 'Market' },
-    { icon: '⚡', label: 'Bundles', routeName: 'BasketBuilder' },
+    { icon: '�', label: 'Markets', routeName: 'Market' },
+    { icon: '📦', label: 'Bundles', routeName: 'BasketBuilder' },
     { icon: '📅', label: 'Schedule', routeName: 'Schedule' },
     { icon: '👤', label: 'Profile', routeName: 'Settings' },
   ];

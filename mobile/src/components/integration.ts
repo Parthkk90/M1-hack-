@@ -1,23 +1,42 @@
 // Real blockchain and API integration with Movement Baskets SDK
-import * as sdk from '../sdk';
-import { Account } from '@aptos-labs/ts-sdk';
+import { Aptos, AptosConfig, Account, Ed25519PrivateKey } from '@aptos-labs/ts-sdk';
+import { WALLET_CONFIG, getExplorerTxUrl, getExplorerAccountUrl, formatMOVE, toOctas } from '../config/wallet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Initialize Aptos client for Movement Testnet
+const config = new AptosConfig({ 
+  fullnode: WALLET_CONFIG.NETWORK.rpcUrl,
+  faucet: WALLET_CONFIG.NETWORK.faucetUrl
+});
+export const aptos = new Aptos(config);
 
 // Wallet state management
 let currentAccount: Account | null = null;
 let isConnected = false;
+let walletAddress: string = '';
 
 export const blockchain = {
   connectWallet: async () => {
     try {
-      // In production, use Petra/Martian wallet adapter
-      // For now, generate account for testing
-      currentAccount = sdk.createAccount();
+      // Try to load existing wallet from storage
+      const storedPrivateKey = await AsyncStorage.getItem('wallet_private_key');
       
-      // Fund account on testnet
-      await sdk.fundAccount(currentAccount);
-      isConnected = true;
-      
-      return `Connected: ${currentAccount.accountAddress.toString().substring(0, 10)}...`;
+      if (storedPrivateKey) {
+        // Restore existing wallet
+        const privateKey = new Ed25519PrivateKey(storedPrivateKey);
+        currentAccount = Account.fromPrivateKey({ privateKey });
+        walletAddress = currentAccount.accountAddress.toString();
+        isConnected = true;
+        
+        return `Connected: ${walletAddress.substring(0, 10)}...`;
+      } else {
+        // Use the test wallet for demo
+        // In production, implement Petra/Martian wallet integration
+        walletAddress = WALLET_CONFIG.TEST_WALLET_ADDRESS;
+        isConnected = true;
+        
+        return `Connected: ${walletAddress.substring(0, 10)}...`;
+      }
     } catch (error: any) {
       console.error('Wallet connection failed:', error);
       throw new Error('Failed to connect wallet: ' + error.message);
@@ -27,22 +46,25 @@ export const blockchain = {
   disconnectWallet: () => {
     currentAccount = null;
     isConnected = false;
+    walletAddress = '';
     return 'Wallet disconnected';
   },
 
   getAccount: () => currentAccount,
+  
+  getWalletAddress: () => walletAddress,
 
   isConnected: () => isConnected,
 
   getBalance: async () => {
-    if (!currentAccount) {
+    if (!isConnected) {
       throw new Error('Wallet not connected');
     }
     
     try {
-      // Get APT balance
-      const resources = await sdk.aptos.getAccountResources({
-        accountAddress: currentAccount.accountAddress,
+      // Get MOVE balance from testnet
+      const resources = await aptos.getAccountResources({
+        accountAddress: walletAddress,
       });
       
       const coinResource = resources.find(
@@ -51,7 +73,7 @@ export const blockchain = {
       
       if (coinResource) {
         const balance = (coinResource.data as any).coin.value;
-        return Number(balance) / 100000000; // Convert from octas to APT
+        return Number(balance) / 100000000; // Convert from octas to MOVE
       }
       
       return 0;
@@ -61,12 +83,43 @@ export const blockchain = {
     }
   },
 
-  sendTransaction: async (tx: any) => {
-    if (!currentAccount) {
+  sendTransaction: async (recipientAddress: string, amount: number) => {
+    if (!isConnected || !currentAccount) {
       throw new Error('Wallet not connected');
     }
-    return 'Transaction sent';
+    
+    try {
+      const amountOctas = toOctas(amount);
+      
+      const transaction = await aptos.transaction.build.simple({
+        sender: currentAccount.accountAddress,
+        data: {
+          function: '0x1::coin::transfer',
+          typeArguments: ['0x1::aptos_coin::AptosCoin'],
+          functionArguments: [recipientAddress, amountOctas],
+        },
+      });
+
+      const committedTxn = await aptos.signAndSubmitTransaction({
+        signer: currentAccount,
+        transaction,
+      });
+
+      await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+      
+      return {
+        success: true,
+        transactionHash: committedTxn.hash,
+        explorerUrl: getExplorerTxUrl(committedTxn.hash),
+        message: `Sent ${formatMOVE(amountOctas)}`,
+      };
+    } catch (error: any) {
+      console.error('Transaction failed:', error);
+      throw new Error('Failed to send transaction: ' + error.message);
+    }
   },
+
+  getExplorerUrl: () => getExplorerAccountUrl(walletAddress),
 };
 
 export const api = {
@@ -175,27 +228,48 @@ export const api = {
   },
 
   openPosition: async (basketWeights: any, collateral: number, leverage: number, isLong: boolean) => {
-    if (!currentAccount) {
+    if (!isConnected || !currentAccount) {
       throw new Error('Wallet not connected');
     }
     
     try {
-      // Mock response until contracts are deployed
-      console.log('Position would be created with:', { basketWeights, collateral, leverage, isLong });
+      const collateralOctas = toOctas(collateral);
+      
+      // Validate basket weights
+      const totalWeight = basketWeights.BTC + basketWeights.ETH + basketWeights.SOL;
+      if (totalWeight !== 100) {
+        throw new Error('Basket weights must sum to 100%');
+      }
+      
+      const transaction = await aptos.transaction.build.simple({
+        sender: currentAccount.accountAddress,
+        data: {
+          function: `${WALLET_CONFIG.CONTRACT_ADDRESS}::basket_vault::open_position`,
+          functionArguments: [
+            WALLET_CONFIG.CONTRACT_ADDRESS,
+            collateralOctas,
+            leverage,
+            basketWeights.BTC,
+            basketWeights.ETH,
+            basketWeights.SOL,
+            isLong,
+          ],
+        },
+      });
+
+      const committedTxn = await aptos.signAndSubmitTransaction({
+        signer: currentAccount,
+        transaction,
+      });
+
+      await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
       
       return {
         success: true,
-        transactionHash: '0x' + Math.random().toString(16).substr(2, 64),
-        message: `Mock: Position opened with ${leverage}x leverage (contracts not deployed)`,
+        transactionHash: committedTxn.hash,
+        explorerUrl: getExplorerTxUrl(committedTxn.hash),
+        message: `Position opened with ${leverage}x leverage`,
       };
-      
-      // Original code to use when contracts are deployed:
-      // const collateralOctas = Math.floor(collateral * 100000000);
-      // const result = await sdk.openPosition(...);
-      // return { success: result.success, transactionHash: result.transactionHash, message: ... };
-      //   isLong
-      // );
-      // return { success: result.success, transactionHash: result.transactionHash, message: ... };
     } catch (error: any) {
       console.error('Failed to create position:', error);
       throw new Error('Failed to create position: ' + error.message);
@@ -203,16 +277,30 @@ export const api = {
   },
 
   closePosition: async (positionId: number) => {
-    if (!currentAccount) {
+    if (!isConnected || !currentAccount) {
       throw new Error('Wallet not connected');
     }
     
     try {
-      const result = await sdk.closePosition(currentAccount, positionId);
+      const transaction = await aptos.transaction.build.simple({
+        sender: currentAccount.accountAddress,
+        data: {
+          function: `${WALLET_CONFIG.CONTRACT_ADDRESS}::basket_vault::close_position`,
+          functionArguments: [WALLET_CONFIG.CONTRACT_ADDRESS, positionId],
+        },
+      });
+
+      const committedTxn = await aptos.signAndSubmitTransaction({
+        signer: currentAccount,
+        transaction,
+      });
+
+      await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
       
       return {
-        success: result.success,
-        transactionHash: result.transactionHash,
+        success: true,
+        transactionHash: committedTxn.hash,
+        explorerUrl: getExplorerTxUrl(committedTxn.hash),
         message: 'Position closed successfully',
       };
     } catch (error: any) {
@@ -222,18 +310,33 @@ export const api = {
   },
 
   addCollateral: async (positionId: number, amount: number) => {
-    if (!currentAccount) {
+    if (!isConnected || !currentAccount) {
       throw new Error('Wallet not connected');
     }
     
     try {
-      const amountOctas = Math.floor(amount * 100000000);
-      const result = await sdk.addCollateral(currentAccount, positionId, amountOctas);
+      const amountOctas = toOctas(amount);
+      
+      const transaction = await aptos.transaction.build.simple({
+        sender: currentAccount.accountAddress,
+        data: {
+          function: `${WALLET_CONFIG.CONTRACT_ADDRESS}::basket_vault::add_collateral`,
+          functionArguments: [WALLET_CONFIG.CONTRACT_ADDRESS, positionId, amountOctas],
+        },
+      });
+
+      const committedTxn = await aptos.signAndSubmitTransaction({
+        signer: currentAccount,
+        transaction,
+      });
+
+      await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
       
       return {
-        success: result.success,
-        transactionHash: result.transactionHash,
-        message: `Added ${amount} APT collateral`,
+        success: true,
+        transactionHash: committedTxn.hash,
+        explorerUrl: getExplorerTxUrl(committedTxn.hash),
+        message: `Added ${amount} MOVE collateral`,
       };
     } catch (error: any) {
       console.error('Failed to add collateral:', error);
@@ -280,42 +383,45 @@ export const api = {
     intervalType?: number,
     executionCount?: number
   ) => {
-    if (!currentAccount) {
+    if (!isConnected || !currentAccount) {
       throw new Error('Wallet not connected');
     }
     
     try {
-      const amountOctas = Math.floor(amount * 100000000);
+      const amountOctas = toOctas(amount);
       
+      let transaction;
       if (isRecurring && intervalType !== undefined && executionCount !== undefined) {
-        const result = await sdk.scheduleRecurringPayment(
-          currentAccount,
-          recipient,
-          amountOctas,
-          executionTime,
-          intervalType,
-          executionCount
-        );
-        
-        return {
-          success: result.success,
-          transactionHash: result.transactionHash,
-          message: 'Recurring payment scheduled',
-        };
+        transaction = await aptos.transaction.build.simple({
+          sender: currentAccount.accountAddress,
+          data: {
+            function: `${WALLET_CONFIG.CONTRACT_ADDRESS}::payment_scheduler::schedule_recurring_payment`,
+            functionArguments: [recipient, amountOctas, executionTime, intervalType, executionCount],
+          },
+        });
       } else {
-        const result = await sdk.scheduleOneTimePayment(
-          currentAccount,
-          recipient,
-          amountOctas,
-          executionTime
-        );
-        
-        return {
-          success: result.success,
-          transactionHash: result.transactionHash,
-          message: 'Payment scheduled',
-        };
+        transaction = await aptos.transaction.build.simple({
+          sender: currentAccount.accountAddress,
+          data: {
+            function: `${WALLET_CONFIG.CONTRACT_ADDRESS}::payment_scheduler::schedule_one_time_payment`,
+            functionArguments: [recipient, amountOctas, executionTime],
+          },
+        });
       }
+
+      const committedTxn = await aptos.signAndSubmitTransaction({
+        signer: currentAccount,
+        transaction,
+      });
+
+      await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+      
+      return {
+        success: true,
+        transactionHash: committedTxn.hash,
+        explorerUrl: getExplorerTxUrl(committedTxn.hash),
+        message: isRecurring ? 'Recurring payment scheduled' : 'Payment scheduled',
+      };
     } catch (error: any) {
       console.error('Failed to schedule payment:', error);
       throw new Error('Failed to schedule payment: ' + error.message);

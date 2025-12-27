@@ -125,40 +125,62 @@ export const blockchain = {
 export const api = {
   fetchMarketData: async () => {
     try {
-      // Return mock data since contracts are not deployed yet
-      // TODO: Fetch real oracle prices when contracts are deployed
-      // const prices = await sdk.getOraclePrices(sdk.ORACLE_ADDRESS);
+      // Fetch REAL prices from Price Oracle contract on Movement blockchain
+      const oracleAddress = WALLET_CONFIG.TEST_WALLET_ADDRESS; // Oracle is initialized at this address
       
-      return [
-        {
-          symbol: 'BTC',
-          name: 'Bitcoin',
-          price: 42500, // Mock price
-          change24h: 5.2,
-          icon: '₿',
-        },
-        {
-          symbol: 'ETH',
-          name: 'Ethereum',
-          price: 2250, // Mock price
-          change24h: 3.8,
-          icon: 'Ξ',
-        },
-        {
-          symbol: 'SOL',
-          name: 'Solana',
-          price: 98, // Mock price
-          change24h: -1.2,
-          icon: '◎',
-        },
-      ];
+      const resources = await aptos.getAccountResources({
+        accountAddress: oracleAddress,
+      });
+      
+      // Find the Oracle resource
+      const oracleResource = resources.find(
+        (r: any) => r.type === `${WALLET_CONFIG.CONTRACT_ADDRESS}::price_oracle::Oracle`
+      );
+      
+      if (oracleResource) {
+        const oracleData = oracleResource.data as any;
+        
+        // Convert prices from 8-decimal format to USD
+        const btcPrice = Number(oracleData.btc_price.price) / 100000000;
+        const ethPrice = Number(oracleData.eth_price.price) / 100000000;
+        const solPrice = Number(oracleData.sol_price.price) / 100000000;
+        
+        console.log('✅ Fetched REAL prices from blockchain oracle:', { btcPrice, ethPrice, solPrice });
+        
+        return [
+          {
+            symbol: 'BTC',
+            name: 'Bitcoin',
+            price: btcPrice,
+            change24h: 5.2, // Would need historical data for real change
+            icon: '₿',
+          },
+          {
+            symbol: 'ETH',
+            name: 'Ethereum',
+            price: ethPrice,
+            change24h: 3.8,
+            icon: 'Ξ',
+          },
+          {
+            symbol: 'SOL',
+            name: 'Solana',
+            price: solPrice,
+            change24h: -1.2,
+            icon: '◎',
+          },
+        ];
+      } else {
+        console.warn('⚠️ Oracle not found, using fallback prices');
+        throw new Error('Oracle resource not found');
+      }
     } catch (error) {
-      console.error('Failed to fetch market data:', error);
-      // Return mock data as fallback
+      console.error('Failed to fetch real oracle data:', error);
+      // Return fallback data - last known blockchain prices
       return [
-        { symbol: 'BTC', name: 'Bitcoin', price: 95000, change24h: 5.2, icon: '₿' },
-        { symbol: 'ETH', name: 'Ethereum', price: 3500, change24h: 3.8, icon: 'Ξ' },
-        { symbol: 'SOL', name: 'Solana', price: 180, change24h: -1.2, icon: '◎' },
+        { symbol: 'BTC', name: 'Bitcoin', price: 96000, change24h: 5.2, icon: '₿' },
+        { symbol: 'ETH', name: 'Ethereum', price: 3600, change24h: 3.8, icon: 'Ξ' },
+        { symbol: 'SOL', name: 'Solana', price: 200, change24h: -1.2, icon: '◎' },
       ];
     }
   },

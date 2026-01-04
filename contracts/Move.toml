@@ -1,0 +1,15 @@
+[package]
+name = "cresca"
+version = "1.0.0"
+authors = ["Cresca Team"]
+
+[addresses]
+cresca = "0x3aa36fb1c8226096d5216f0c5b45bd24b3b37cc55a7e68cdfd2762c5f82e3796"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "aptos-release-v1.8"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-addresses]
+cresca = "0x3aa36fb1c8226096d5216f0c5b45bd24b3b37cc55a7e68cdfd2762c5f82e3796"

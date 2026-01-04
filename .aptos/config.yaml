@@ -1,0 +1,8 @@
+---
+profiles:
+  cresca:
+    private_key: "0x9e0206b9275b8d9f60e3b5d9c721fc4cb3f628e04da4a2f60d61921bbf4fbfa4"
+    public_key: "0x33686f9907f181c85457fbbd7adacc549be5d5eef869f4ba910cfb85e98cb090"
+    account: f6405e17cf4293a8f5f32be0077ca61b4c07019d98b9f29a5bf972aa40c5fa07
+    rest_url: "https://fullnode.testnet.aptoslabs.com"
+    faucet_url: "https://faucet.testnet.aptoslabs.com"

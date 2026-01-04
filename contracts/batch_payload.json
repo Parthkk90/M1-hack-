@@ -1,0 +1,8 @@
+﻿{
+  "function_id": "0xf5fe51c654d6475b8bf41bd0697a81fec15dbfb5488e83970d98badcaaec97a1::payments::batch_send",
+  "type_args": [],
+  "args": [
+    ["0xba47b1ef735efee3e6649d93134171c61e59fc8eeb02a0c8762fc1608469bd55", "0x5003f5c306077e4b0798546e4f719ed0efb2ef94ad431b1f1c1450aabf57f7b7"],
+    ["20000000", "20000000"]
+  ]
+}

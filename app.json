@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Cresca Wallet",
+    "slug": "cresca-wallet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "crescawallet",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#6366F1",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cresca.wallet"
+    },
+    "android": {
+      "package": "com.cresca.wallet",
+      "adaptiveIcon": {
+        "backgroundColor": "#6366F1"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single"
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
